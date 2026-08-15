@@ -7,8 +7,7 @@
   const write=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}};
 
   let order=Array.isArray(read(ORDER_KEY,null))?read(ORDER_KEY,[]):(Array.isArray(read('dhost.botOrder.v3',null))?read('dhost.botOrder.v3',[]):[]);
-  let pinned=Array.isArray(read(PIN_KEY,null))?read(PIN_KEY,PIN_KEY?[]):[];
-  if(!pinned.length){pinned=Array.isArray(read('dhost.botPinned.v3',null))?read('dhost.botPinned.v3',[]):[];}
+  let pinned=Array.isArray(read(PIN_KEY,null))?read(PIN_KEY,[]):(Array.isArray(read('dhost.botPinned.v3',null))?read('dhost.botPinned.v3',[]):[]);
   let columns=Math.max(1,Math.min(4,Number(read(COL_KEY,read('dhost.botColumns.v3',1)))||1));
   let reorderMode=false;
   let draftOrder=[];
