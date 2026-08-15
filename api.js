@@ -14,8 +14,8 @@
  * не нужно, все функции сами переключатся на настоящие запросы.
  */
 
-const USE_MOCKS = true; // <-- поставьте false, когда бэкенд будет готов
-const BASE_URL = "https://your-backend.example.com"; // TODO: заменить на свой домен
+const USE_MOCKS = false;
+const BASE_URL = "https://completely-protest-differential-fought.trycloudflare.com";
 
 function authHeaders() {
   // initData уже содержит подписанные Telegram user.id, auth_date и т.д.
