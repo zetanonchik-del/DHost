@@ -130,9 +130,19 @@ async function deleteBot(name) {
 // ==========================================================================
 async function fetchLanguage() {
   if (!USE_MOCKS) {
-    const res = await fetch(`${BASE_URL}/api/settings/language`, { headers: authHeaders() });
-    return (await res.json()).language;
+    try {
+      const res = await fetch(`${BASE_URL}/api/settings/language`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) return "ru";
+
+      const data = await res.json();
+      return data.language === "en" ? "en" : "ru";
+    } catch (_) {
+      return "ru";
+    }
   }
+
   await _wait(150);
   return localStorage.getItem("mock_lang") || "ru";
 }
@@ -157,9 +167,22 @@ async function setLanguage(lang) {
 // ==========================================================================
 async function fetchAuthStatus() {
   if (!USE_MOCKS) {
-    const res = await fetch(`${BASE_URL}/api/auth/status`, { headers: authHeaders() });
-    return await res.json();
+    try {
+      const res = await fetch(`${BASE_URL}/api/auth/status`, {
+        headers: authHeaders(),
+      });
+      if (!res.ok) return { authorized: false, has_bots: false };
+
+      const data = await res.json();
+      return {
+        authorized: data.authorized === true,
+        has_bots: data.has_bots === true,
+      };
+    } catch (_) {
+      return { authorized: false, has_bots: false };
+    }
   }
+
   await _wait(400);
   return { authorized: MOCK_AUTHORIZED, has_bots: MOCK_BOTS.length > 0 };
 }
