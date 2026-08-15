@@ -7,7 +7,8 @@
   const write=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}};
 
   let order=Array.isArray(read(ORDER_KEY,null))?read(ORDER_KEY,[]):(Array.isArray(read('dhost.botOrder.v3',null))?read('dhost.botOrder.v3',[]):[]);
-  let pinned=Array.isArray(read(PIN_KEY,null))?read(PIN_KEY,[]):(Array.isArray(read('dhost.botPinned.v3',null))?read('dhost.botPinned.v3',[]):[]);
+  let pinned=Array.isArray(read(PIN_KEY,null))?read(PIN_KEY,PIN_KEY?[]):[];
+  if(!pinned.length){pinned=Array.isArray(read('dhost.botPinned.v3',null))?read('dhost.botPinned.v3',[]):[];}
   let columns=Math.max(1,Math.min(4,Number(read(COL_KEY,read('dhost.botColumns.v3',1)))||1));
   let reorderMode=false;
   let draftOrder=[];
@@ -33,8 +34,7 @@
     .reorder-check{margin-left:auto;width:36px;height:36px;border-radius:11px;border:1px solid rgba(53,208,127,.28);background:rgba(53,208,127,.10);color:var(--ok);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .15s,background .15s}.reorder-check:active{transform:scale(.9)}.reorder-check svg{width:18px;height:18px}
     .reorder-grid{display:grid;grid-template-columns:repeat(var(--bot-columns,1),minmax(0,1fr));gap:8px;width:100%;align-items:start}
     .reorder-card{position:relative;min-width:0;padding:13px;border:1px solid var(--border);border-radius:15px;background:var(--bg-card);transition:transform .16s cubic-bezier(.2,.8,.2,1),border-color .16s,box-shadow .16s,opacity .16s;touch-action:none;user-select:none;-webkit-user-select:none}
-    .reorder-card.is-dragging{opacity:.08}
-    .reorder-card.drag-over{border-color:#4b8df7;box-shadow:0 0 0 2px rgba(59,130,246,.13)}
+    .reorder-card.is-dragging{opacity:.08}.reorder-card.drag-over{border-color:#4b8df7;box-shadow:0 0 0 2px rgba(59,130,246,.13)}
     .reorder-card-ghost{position:fixed!important;z-index:10000!important;pointer-events:none!important;margin:0!important;opacity:.98!important;transform:scale(1.035) rotate(1deg)!important;border-color:#4b8df7!important;box-shadow:0 18px 42px rgba(0,0,0,.5),0 0 0 2px rgba(59,130,246,.18)!important}
     .reorder-card-head{display:flex;align-items:center;gap:8px}.reorder-name{font:700 14px var(--font-ui);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.reorder-status{margin-left:auto}.reorder-handle{width:27px;height:27px;min-width:27px;border:0;border-radius:8px;background:rgba(255,255,255,.045);color:var(--text-faint);display:flex;align-items:center;justify-content:center;cursor:grab}.reorder-handle:active{cursor:grabbing;background:var(--blue-bg);color:#8eb5ff}.reorder-handle svg{width:15px;height:15px}
     .reorder-card-meta{margin-top:9px;font:500 9px var(--font-mono);color:var(--text-faint);display:flex;justify-content:space-between;gap:7px}.reorder-card-meta span:last-child{color:var(--text-dim)}
@@ -43,133 +43,36 @@
     @media(max-width:520px){.reorder-card{padding:11px}.reorder-card-meta{font-size:8px}.reorder-name{font-size:13px}.reorder-grid{gap:7px}}
   `;
   function inject(){let s=document.getElementById('dhost-enhancements-style');if(!s){s=document.createElement('style');s.id='dhost-enhancements-style';document.head.appendChild(s)}s.textContent=STYLE}
-
-  function sortState(list=STATE?.bots){
-    if(!Array.isArray(list))return;
-    const pos=new Map(order.map((n,i)=>[n,i]));
-    list.sort((a,b)=>{const ap=pinned.includes(a.name),bp=pinned.includes(b.name);if(ap!==bp)return ap?-1:1;return(pos.get(a.name)??999999)-(pos.get(b.name)??999999)});
-  }
+  function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+  function sortState(list=STATE?.bots){if(!Array.isArray(list))return;const pos=new Map(order.map((n,i)=>[n,i]));list.sort((a,b)=>{const ap=pinned.includes(a.name),bp=pinned.includes(b.name);if(ap!==bp)return ap?-1:1;return(pos.get(a.name)??999999)-(pos.get(b.name)??999999)})}
   function normalizeOrder(names){const next=[];names.forEach(n=>{if(n&&!next.includes(n))next.push(n)});order.forEach(n=>{if(!next.includes(n))next.push(n)});(STATE?.bots||[]).forEach(b=>{if(!next.includes(b.name))next.push(b.name)});return next}
   function applyLayout(){document.querySelectorAll('.home-screen .bot-list').forEach(list=>{list.style.setProperty('--bot-columns',String(columns));list.dataset.columns=String(columns)})}
 
-  function addPinMenus(){
-    document.querySelectorAll('.bot-actions').forEach(menu=>{
-      const card=menu.closest('.bot-card');
-      const name=card?.dataset.bot||menu.querySelector('[data-menu-name]')?.dataset.menuName;
-      if(!name||menu.querySelector('.pin-action'))return;
-      const b=document.createElement('button');b.type='button';b.className='bot-action pin-action';
-      b.innerHTML=(pinned.includes(name)?ICON_UNPIN:ICON_PIN)+'<span>'+(pinned.includes(name)?'Открепить':'Закрепить')+'</span>';
-      b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();pinned=pinned.includes(name)?pinned.filter(n=>n!==name):[...pinned,name];write(PIN_KEY,pinned);if(window.DHOST_UI)DHOST_UI.menu=null;sortState();render()});
-      menu.insertBefore(b,menu.firstChild);
-    });
-  }
+  function addPinMenus(){document.querySelectorAll('.bot-actions').forEach(menu=>{const card=menu.closest('.bot-card');const name=card?.dataset.bot||menu.querySelector('[data-menu-name]')?.dataset.menuName;if(!name||menu.querySelector('.pin-action'))return;const b=document.createElement('button');b.type='button';b.className='bot-action pin-action';b.innerHTML=(pinned.includes(name)?ICON_UNPIN:ICON_PIN)+'<span>'+(pinned.includes(name)?'Открепить':'Закрепить')+'</span>';b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();pinned=pinned.includes(name)?pinned.filter(n=>n!==name):[...pinned,name];write(PIN_KEY,pinned);if(window.DHOST_UI)DHOST_UI.menu=null;sortState();render()});menu.insertBefore(b,menu.firstChild)})}
 
   function addLayoutRow(){
     if(typeof currentScreen!=='function'||currentScreen()!=='settings'||document.getElementById('dhost-layout-row'))return;
-    const cards=[...document.querySelectorAll('.settings-screen .list-card,.settings-screen .settings-card,.list-card')];
-    const target=cards[cards.length-1];if(!target)return;
+    const cards=[...document.querySelectorAll('.list-card')];const target=cards[cards.length-1];if(!target)return;
     const section=document.createElement('div');section.className='section-label';section.textContent=LANG==='en'?'Interface':'Интерфейс';
-    const card=document.createElement('div');card.className='list-card';
-    card.innerHTML=`<button type="button" class="list-row layout-setting-row" id="dhost-layout-row"><div class="list-row-label">В ряд</div><div class="layout-setting-value"><span>${columns}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div></button>`;
-    target.after(section,card);
-    card.querySelector('#dhost-layout-row').addEventListener('click',openReorderScreen);
+    const card=document.createElement('div');card.className='list-card';card.innerHTML=`<button type="button" class="list-row layout-setting-row" id="dhost-layout-row"><div class="list-row-label">В ряд</div><div class="layout-setting-value"><span>${columns}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div></button>`;
+    target.after(section,card);card.querySelector('#dhost-layout-row').addEventListener('click',openReorderScreen);
   }
 
-  function reorderCards(){
-    return (draftOrder||[]).map(name=>STATE.bots.find(b=>b.name===name)).filter(Boolean);
-  }
-  function reorderMarkup(){
-    const bots=reorderCards();
-    const cards=bots.map(b=>`<div class="reorder-card" data-reorder-bot="${esc(b.name)}">
-      <div class="reorder-card-head"><div class="reorder-name">${esc(b.name)}</div><div class="reorder-status">${statusPill(b.status)}</div><button type="button" class="reorder-handle" aria-label="Переместить">${ICON_DRAG}</button></div>
-      <div class="reorder-card-meta"><span>${t('cpu')} ${Number(b.cpu_percent||0).toFixed(1)}%</span><span>${t('ram')} ${Math.round(Number(b.ram_used_mb)||0)}/${Math.round(Number(b.ram_limit_mb)||0)}MB</span></div>
-    </div>`).join('');
-    return `<div class="screen reorder-screen"><div class="reorder-topbar"><button class="reorder-back" id="reorder-cancel" type="button">${ICON_BACK}</button><div><div class="reorder-title">Порядок юзерботов</div><div class="reorder-sub">Перетащите карточки за значок, чтобы изменить порядок</div></div><button class="reorder-check" id="reorder-done" type="button" aria-label="Готово">${ICON_CHECK}</button></div><div class="reorder-grid" id="reorder-grid" style="--bot-columns:${columns}">${cards}</div></div>`;
-  }
-  function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+  function reorderCards(){return (draftOrder||[]).map(name=>STATE.bots.find(b=>b.name===name)).filter(Boolean)}
+  function reorderMarkup(){const bots=reorderCards();const cards=bots.map(b=>`<div class="reorder-card" data-reorder-bot="${esc(b.name)}"><div class="reorder-card-head"><div class="reorder-name">${esc(b.name)}</div><div class="reorder-status">${statusPill(b.status)}</div><button type="button" class="reorder-handle" aria-label="Переместить">${ICON_DRAG}</button></div><div class="reorder-card-meta"><span>${t('cpu')} ${Number(b.cpu_percent||0).toFixed(1)}%</span><span>${t('ram')} ${Math.round(Number(b.ram_used_mb)||0)}/${Math.round(Number(b.ram_limit_mb)||0)}MB</span></div></div>`).join('');return `<div class="screen reorder-screen"><div class="reorder-topbar"><button class="reorder-back" id="reorder-cancel" type="button">${ICON_BACK}</button><div><div class="reorder-title">Порядок юзерботов</div><div class="reorder-sub">Перетащите за значок, чтобы изменить порядок</div></div><button class="reorder-check" id="reorder-done" type="button" aria-label="Готово">${ICON_CHECK}</button></div><div class="reorder-grid" id="reorder-grid" style="--bot-columns:${columns}">${cards}</div></div>`}
 
-  function openReorderScreen(){
-    if(!STATE?.bots?.length)return;
-    sortState();
-    draftOrder=STATE.bots.map(b=>b.name);
-    reorderMode=true;
-    const app=document.getElementById('app');
-    app.innerHTML=reorderMarkup();
-    wireReorder();
-    haptic?.('light');
-  }
-  function closeReorder(){reorderMode=false;drag=null;draftOrder=[];render();}
+  function openReorderScreen(){if(!STATE?.bots?.length)return;sortState();draftOrder=STATE.bots.map(b=>b.name);reorderMode=true;document.getElementById('app').innerHTML=reorderMarkup();wireReorder();haptic?.('light')}
+  function closeReorder(){reorderMode=false;drag=null;draftOrder=[];render()}
+  function rerenderReorder(){if(!reorderMode)return;document.getElementById('app').innerHTML=reorderMarkup();wireReorder()}
 
-  function startPointerDrag(card,e){
-    if(!reorderMode)return;
-    const grid=document.getElementById('reorder-grid');if(!grid)return;
-    const r=card.getBoundingClientRect();
-    const ph=document.createElement('div');ph.className='reorder-card';ph.style.visibility='hidden';ph.style.width=r.width+'px';ph.style.height=r.height+'px';
-    card.after(ph);card.classList.add('is-dragging');
-    const ghost=card.cloneNode(true);ghost.classList.add('reorder-card-ghost');ghost.style.width=r.width+'px';ghost.style.height=r.height+'px';ghost.style.left=r.left+'px';ghost.style.top=r.top+'px';document.body.appendChild(ghost);
-    drag={card,grid,ph,ghost,pointerId:e.pointerId,ox:e.clientX-r.left,oy:e.clientY-r.top,name:card.dataset.reorderBot};
-    try{card.setPointerCapture(e.pointerId)}catch(_){ }
-    movePointerDrag(e.clientX,e.clientY);
-  }
-  function movePointerDrag(x,y){
-    if(!drag)return;
-    const d=drag;d.ghost.style.left=(x-d.ox)+'px';d.ghost.style.top=(y-d.oy)+'px';
-    const target=document.elementFromPoint(x,y)?.closest('.reorder-card');
-    if(!target||target===d.card||target===d.ph||!d.grid.contains(target)){return;}
-    document.querySelectorAll('.reorder-card.drag-over').forEach(c=>c.classList.remove('drag-over'));
-    target.classList.add('drag-over');
-    const r=target.getBoundingClientRect();
-    const before=(x<r.left+r.width/2)&&(columns>1) || (y<r.top+r.height/2);
-    if(before) target.before(d.ph); else target.after(d.ph);
-  }
-  function finishPointerDrag(){
-    if(!drag)return;
-    const d=drag;drag=null;
-    d.card.classList.remove('is-dragging');d.ph.replaceWith(d.card);d.ghost.remove();document.querySelectorAll('.reorder-card.drag-over').forEach(c=>c.classList.remove('drag-over'));
-    draftOrder=[...document.querySelectorAll('#reorder-grid .reorder-card')].map(c=>c.dataset.reorderBot).filter(Boolean);
-    renderReorderOnly();
-    haptic?.('light');
-  }
-  function renderReorderOnly(){const grid=document.getElementById('reorder-grid');if(!grid)return;const old=grid.scrollTop;grid.outerHTML=reorderMarkup().match(/<div class="reorder-grid"[\s\S]*<\/div><\/div>$/)?.[0]||grid.outerHTML;const next=document.getElementById('reorder-grid');if(next){next.style.setProperty('--bot-columns',String(columns));next.scrollTop=old;bindReorderCards();}}
-  function bindReorderCards(){
-    document.querySelectorAll('#reorder-grid .reorder-handle').forEach(handle=>{
-      if(handle.dataset.bound==='1')return;handle.dataset.bound='1';
-      handle.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();startPointerDrag(handle.closest('.reorder-card'),e)});
-    });
-    document.querySelectorAll('#reorder-grid .reorder-card').forEach(card=>{
-      card.addEventListener('pointermove',e=>{if(drag){e.preventDefault();movePointerDrag(e.clientX,e.clientY)}});
-      card.addEventListener('pointerup',e=>{if(drag?.card===card){e.preventDefault();finishPointerDrag()}});
-      card.addEventListener('pointercancel',()=>{if(drag?.card===card)finishPointerDrag()});
-      card.addEventListener('lostpointercapture',()=>{if(drag?.card===card)finishPointerDrag()});
-    });
-  }
-  function wireReorder(){
-    document.getElementById('reorder-cancel')?.addEventListener('click',closeReorder);
-    document.getElementById('reorder-done')?.addEventListener('click',showSaveSheet);
-    bindReorderCards();
-  }
-  function showSaveSheet(){
-    const sheet=document.createElement('div');sheet.className='reorder-save-sheet';sheet.innerHTML='<div class="reorder-save-dialog"><div class="reorder-save-title">Сохранить изменения?</div><div class="reorder-save-text">Новый порядок юзерботов будет сохранён.</div><div class="reorder-save-actions"><button class="discard" type="button">Не сохранять</button><button class="save" type="button">Сохранить</button></div></div>';
-    sheet.querySelector('.save').addEventListener('click',()=>{order=normalizeOrder(draftOrder);write(ORDER_KEY,order);sortState();sheet.remove();reorderMode=false;draftOrder=[];render();haptic?.('success')});
-    sheet.querySelector('.discard').addEventListener('click',()=>{sheet.remove();reorderMode=false;draftOrder=[];render();});
-    document.body.appendChild(sheet);
-  }
+  function startPointerDrag(card,e){if(!reorderMode)return;const grid=document.getElementById('reorder-grid');if(!grid)return;const r=card.getBoundingClientRect();const ph=document.createElement('div');ph.className='reorder-card';ph.style.visibility='hidden';ph.style.width=r.width+'px';ph.style.height=r.height+'px';card.after(ph);card.classList.add('is-dragging');const ghost=card.cloneNode(true);ghost.classList.add('reorder-card-ghost');ghost.style.width=r.width+'px';ghost.style.height=r.height+'px';ghost.style.left=r.left+'px';ghost.style.top=r.top+'px';document.body.appendChild(ghost);drag={card,grid,ph,ghost,pointerId:e.pointerId,ox:e.clientX-r.left,oy:e.clientY-r.top};try{card.setPointerCapture(e.pointerId)}catch(_){ }movePointerDrag(e.clientX,e.clientY)}
+  function movePointerDrag(x,y){if(!drag)return;const d=drag;d.ghost.style.left=(x-d.ox)+'px';d.ghost.style.top=(y-d.oy)+'px';const target=document.elementFromPoint(x,y)?.closest('.reorder-card');if(!target||target===d.card||target===d.ph||!d.grid.contains(target))return;document.querySelectorAll('.reorder-card.drag-over').forEach(c=>c.classList.remove('drag-over'));target.classList.add('drag-over');const r=target.getBoundingClientRect();const before=columns>1?(x<r.left+r.width/2):(y<r.top+r.height/2);if(before)target.before(d.ph);else target.after(d.ph)}
+  function finishPointerDrag(){if(!drag)return;const d=drag;drag=null;d.card.classList.remove('is-dragging');d.ph.replaceWith(d.card);d.ghost.remove();document.querySelectorAll('.reorder-card.drag-over').forEach(c=>c.classList.remove('drag-over'));draftOrder=[...document.querySelectorAll('#reorder-grid .reorder-card')].map(c=>c.dataset.reorderBot).filter(Boolean);rerenderReorder();haptic?.('light')}
+  function bindReorderCards(){document.querySelectorAll('#reorder-grid .reorder-handle').forEach(handle=>{if(handle.dataset.bound==='1')return;handle.dataset.bound='1';handle.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();startPointerDrag(handle.closest('.reorder-card'),e)})});document.querySelectorAll('#reorder-grid .reorder-card').forEach(card=>{card.addEventListener('pointermove',e=>{if(drag){e.preventDefault();movePointerDrag(e.clientX,e.clientY)}});card.addEventListener('pointerup',e=>{if(drag?.card===card){e.preventDefault();finishPointerDrag()}});card.addEventListener('pointercancel',()=>{if(drag?.card===card)finishPointerDrag()});card.addEventListener('lostpointercapture',()=>{if(drag?.card===card)finishPointerDrag()})})}
+  function wireReorder(){document.getElementById('reorder-cancel')?.addEventListener('click',closeReorder);document.getElementById('reorder-done')?.addEventListener('click',showSaveSheet);bindReorderCards()}
+  function showSaveSheet(){const sheet=document.createElement('div');sheet.className='reorder-save-sheet';sheet.innerHTML='<div class="reorder-save-dialog"><div class="reorder-save-title">Сохранить изменения?</div><div class="reorder-save-text">Новый порядок юзерботов будет сохранён.</div><div class="reorder-save-actions"><button class="discard" type="button">Не сохранять</button><button class="save" type="button">Сохранить</button></div></div>';sheet.querySelector('.save').addEventListener('click',()=>{order=normalizeOrder(draftOrder);write(ORDER_KEY,order);sortState();sheet.remove();reorderMode=false;draftOrder=[];render();haptic?.('success')});sheet.querySelector('.discard').addEventListener('click',()=>{sheet.remove();reorderMode=false;draftOrder=[];render()});document.body.appendChild(sheet)}
 
-  function patchRender(){
-    if(window.__DHOST_ENHANCED_RENDER4||typeof window.render!=='function')return;
-    const original=window.render;
-    window.render=function(){if(reorderMode)return;sortState();original();requestAnimationFrame(()=>{applyLayout();addPinMenus();addLayoutRow()})};
-    window.__DHOST_ENHANCED_RENDER4=true;
-  }
-
-  document.addEventListener('click',e=>{
-    if(reorderMode)return;
-    if(document.querySelector('.bot-actions')&&!e.target.closest('.bot-actions')&&!e.target.closest('.bot-menu-button')){
-      document.querySelectorAll('.bot-actions').forEach(m=>m.remove());if(window.DHOST_UI)window.DHOST_UI.menu=null;
-    }
-  },false);
-
-  inject();patchRender();
-  const boot=()=>{patchRender();applyLayout();addPinMenus();addLayoutRow()};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else requestAnimationFrame(boot);
+  function patchRender(){if(window.__DHOST_ENHANCED_RENDER4||typeof window.render!=='function')return;const original=window.render;window.render=function(){if(reorderMode)return;sortState();original();requestAnimationFrame(()=>{applyLayout();addPinMenus();addLayoutRow()})};window.__DHOST_ENHANCED_RENDER4=true}
+  document.addEventListener('click',e=>{if(reorderMode)return;if(document.querySelector('.bot-actions')&&!e.target.closest('.bot-actions')&&!e.target.closest('.bot-menu-button')){document.querySelectorAll('.bot-actions').forEach(m=>m.remove());if(window.DHOST_UI)window.DHOST_UI.menu=null}},false);
+  inject();patchRender();const boot=()=>{patchRender();applyLayout();addPinMenus();addLayoutRow()};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else requestAnimationFrame(boot);
 })();
