@@ -14,8 +14,8 @@
       @keyframes resourceWaveMove{to{transform:translateX(-50%)}}
       .summary-stat{position:relative}
       .summary-wave{position:absolute;left:10px;right:10px;bottom:8px;height:20px;overflow:hidden;opacity:.9;pointer-events:none}
-      .summary-wave-track{width:200%;height:100%;animation:resourceWaveMove var(--wave-speed,4.5s) linear infinite}
-      .summary-wave path{fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;filter:drop-shadow(0 0 4px currentColor)}
+      .summary-wave-svg{display:block;width:200%;height:100%;animation:resourceWaveMove var(--wave-speed,4.5s) linear infinite;will-change:transform}
+      .summary-wave-svg path{fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;filter:drop-shadow(0 0 4px currentColor)}
       .status-wave,.status-dot{isolation:isolate}
       .status-wave:after,.status-dot:after{animation-delay:1s!important}
       .status-wave:before,.status-wave:after,.status-dot:before,.status-dot:after{border-width:1px!important}
@@ -23,7 +23,7 @@
       .status-dot{box-shadow:0 0 8px currentColor!important}
       .bot-card .meter:first-child .meter-track{--wave-color:var(--wave-cpu,var(--cyan))}
       .bot-card .meter:nth-child(2) .meter-track{--wave-color:var(--wave-ram,var(--cyan))}
-      @media (prefers-reduced-motion:reduce){.resource-wave-track,.summary-wave-track{animation:none}}
+      @media (prefers-reduced-motion:reduce){.resource-wave-track,.summary-wave-svg{animation:none}}
     `; document.head.appendChild(s);
   }
 
@@ -31,21 +31,21 @@
     const w=fill?.style?.width || "0";
     const n=parseFloat(w); return Number.isFinite(n)?Math.max(0,Math.min(100,n)):0;
   }
-  function colorFor(pct, type){
+  function colorFor(pct,type){
     if(type === "cpu") return pct >= 85 ? "var(--err)" : pct >= 65 ? "var(--warn)" : "var(--cyan)";
     return pct >= 90 ? "var(--err)" : pct >= 75 ? "var(--warn)" : "var(--cyan)";
   }
-  function makePath(amplitude, phase=0){
+  function makePath(amplitude,phase=0){
     const pts=[];
     for(let x=0;x<=100;x+=2){
-      const y=10 + Math.sin((x/100)*Math.PI*4 + phase)*amplitude + Math.sin((x/100)*Math.PI*8 + phase*.7)*(amplitude*.28);
+      const y=10 + Math.sin((x/100)*Math.PI*4+phase)*amplitude + Math.sin((x/100)*Math.PI*8+phase*.7)*(amplitude*.28);
       pts.push((x===0?"M":"L")+x.toFixed(1)+" "+y.toFixed(2));
     }
     return pts.join(" ");
   }
   function waveSVG(pct,type){
-    const amp=1.2 + Math.min(pct,100)*0.055;
-    const speed=(4.6 - Math.min(pct,100)*0.022).toFixed(2)+"s";
+    const amp=1.2+Math.min(pct,100)*0.055;
+    const speed=(4.6-Math.min(pct,100)*0.022).toFixed(2)+"s";
     const color=colorFor(pct,type);
     const svg=document.createElementNS(SVG_NS,"svg"); svg.setAttribute("class","resource-wave"); svg.setAttribute("viewBox","0 0 100 20"); svg.setAttribute("preserveAspectRatio","none");
     const track=document.createElementNS(SVG_NS,"g"); track.setAttribute("class","resource-wave-track"); track.style.setProperty("--wave-speed",speed);
@@ -58,6 +58,9 @@
     const track=meter.querySelector(".meter-track"), fill=meter.querySelector(".meter-fill");
     if(!track || !fill) return;
     const pct=pctFromFill(fill); const type=meter.querySelector(".meter-label span")?.textContent?.toLowerCase().includes("cpu")?"cpu":"ram";
+    const signature=`${type}:${pct.toFixed(2)}`;
+    if(track.dataset.waveSignature===signature) return;
+    track.dataset.waveSignature=signature;
     track.style.setProperty("--wave-color",colorFor(pct,type));
     const old=track.querySelector(".resource-wave"); if(old) old.remove();
     track.appendChild(waveSVG(pct,type));
@@ -65,7 +68,7 @@
   function addSummaryWave(card){
     if(card.querySelector(".summary-wave")) return;
     const wave=document.createElement("div"); wave.className="summary-wave"; wave.style.color=getComputedStyle(card).color;
-    const svg=document.createElementNS(SVG_NS,"svg"); svg.setAttribute("class","summary-wave"); svg.setAttribute("viewBox","0 0 100 20"); svg.setAttribute("preserveAspectRatio","none");
+    const svg=document.createElementNS(SVG_NS,"svg"); svg.setAttribute("class","summary-wave-svg"); svg.setAttribute("viewBox","0 0 200 20"); svg.setAttribute("preserveAspectRatio","none");
     const track=document.createElementNS(SVG_NS,"g"); track.setAttribute("class","summary-wave-track");
     const count=parseFloat(card.querySelector(".summary-stat-value")?.textContent)||0; const amp=Math.min(5,1.5+count*.8); track.style.setProperty("--wave-speed",(4.8-Math.min(count,10)*.15).toFixed(2)+"s");
     for(const offset of [0,100]){const p=document.createElementNS(SVG_NS,"path");p.setAttribute("d",makePath(amp,offset?Math.PI/2:0));p.setAttribute("transform",`translate(${offset} 0)`);track.appendChild(p)}
