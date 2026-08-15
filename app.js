@@ -405,7 +405,6 @@ function screenHome() {
         <div class="bot-card-top">
           <div>
             <div class="bot-card-name">${b.name}</div>
-            <div class="bot-card-unit">${b.unit}</div>
           </div>
           <div class="bot-card-spacer"></div>
           ${statusPill(b.status)}
@@ -430,8 +429,7 @@ function screenHome() {
 
   return `
     <div class="screen">
-      <div class="section-label">${t("myBots")}</div>
-      <button class="btn btn-ghost refresh-bots" id="btn-refresh-bots">${ICON.refresh}${t("refresh")}</button>
+      <button class="btn btn-refresh refresh-bots" id="btn-refresh-bots">${ICON.refresh}${t("refresh")}</button>
       ${cards}
       <button class="btn btn-ghost" id="btn-open-bot" style="margin-top:4px">${ICON.plus}${t("installNew")}</button>
       ${STATE.subscription ? `<div class="topbar-sub" style="text-align:center">${STATE.subscription.used_slots}/${STATE.subscription.max_slots} ${t("slots")}</div>` : ""}
@@ -563,7 +561,7 @@ function screenLanguage() {
 // Header per screen
 // ---------------------------------------------------------------------------
 const HEADER_META = {
-  home:     { title: () => t("appTitle"), sub: () => (STATE.subscription ? `${STATE.subscription.used_slots}/${STATE.subscription.max_slots} ${t("slots")}` : "") , action: "settings" },
+  home:     { title: () => t("appTitle"), sub: () => "", action: "settings" },
   detail:   { title: () => t("userbot"), sub: () => NAV.params.name || "", action: null },
   settings: { title: () => t("settings"), sub: () => "", action: null },
   language: { title: () => t("language"), sub: () => "", action: null },
