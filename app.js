@@ -38,6 +38,7 @@ const ICON = {
   play: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
   stop: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>`,
   restart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>`,
+  refresh: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 5v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2M20 19v-4h-4"/></svg>`,
   reinstall: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>`,
   trash: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`,
   plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>`,
@@ -62,6 +63,8 @@ const STR = {
     notAuthText: "Авторизация в Telegram-аккаунт (номер, код, пароль) происходит в чате с ботом — это отдельный, более защищённый шаг. После входа список ваших юзерботов появится здесь.",
     openBot: "Открыть чат с ботом",
     myBots: "Мои юзерботы",
+    userbot: "Юзербот",
+    refresh: "Обновить",
     installNew: "Установить юзербота",
     emptyTitle: "Пока нет юзерботов",
     emptyText: "Установка тоже начинается в чате с ботом — там бот проведёт вас через вход в аккаунт.",
@@ -109,6 +112,8 @@ const STR = {
     notAuthText: "Signing in to your Telegram account (phone, code, password) happens in the bot's chat — a separate, more secure step. Once signed in, your userbots will show up here.",
     openBot: "Open bot chat",
     myBots: "My userbots",
+    userbot: "Userbot",
+    refresh: "Refresh",
     installNew: "Install a userbot",
     emptyTitle: "No userbots yet",
     emptyText: "Installation also starts in the bot's chat, where it walks you through signing in.",
@@ -328,15 +333,32 @@ const STATE = {
 async function loadAll() {
   STATE.loading = true;
   render();
-  const auth = await fetchAuthStatus();
-  STATE.authorized = auth.authorized;
-  if (auth.authorized) {
-    const [bots, sub] = await Promise.all([fetchBots(), fetchSubscription()]);
-    STATE.bots = bots;
-    STATE.subscription = sub;
+  try {
+    const auth = await fetchAuthStatus();
+    STATE.authorized = auth.authorized;
+    if (auth.authorized) {
+      const [bots, sub] = await Promise.all([fetchBots(), fetchSubscription()]);
+      STATE.bots = bots;
+      STATE.subscription = sub;
+    }
+  } catch (error) {
+    console.error("Failed to refresh Mini App data", error);
+    STATE.authorized = false;
+    STATE.bots = [];
+    STATE.subscription = null;
+    toast(t("actionError"), "err");
+  } finally {
+    STATE.loading = false;
+    render();
   }
-  STATE.loading = false;
-  render();
+}
+
+function openTelegramLink(url) {
+  if (tg?.openTelegramLink) {
+    tg.openTelegramLink(url);
+  } else {
+    window.open(url, "_blank", "noopener");
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -370,7 +392,7 @@ function screenHome() {
         <div class="gate-title">${t("emptyTitle")}</div>
         <div class="gate-text">${t("emptyText")}</div>
         <button class="btn btn-primary" id="btn-open-bot">${t("installNew")}</button>
-        ${STATE.subscription ? `<div class="topbar-sub" style="margin-top:2px">${STATE.subscription.used_slots}/${STATE.subscription.max_slots} slots</div>` : ""}
+        ${STATE.subscription ? `<div class="topbar-sub" style="margin-top:2px">${STATE.subscription.used_slots}/${STATE.subscription.max_slots} ${t("slots")}</div>` : ""}
       </div>
     `;
   }
@@ -409,9 +431,10 @@ function screenHome() {
   return `
     <div class="screen">
       <div class="section-label">${t("myBots")}</div>
+      <button class="btn btn-ghost refresh-bots" id="btn-refresh-bots">${ICON.refresh}${t("refresh")}</button>
       ${cards}
       <button class="btn btn-ghost" id="btn-open-bot" style="margin-top:4px">${ICON.plus}${t("installNew")}</button>
-      ${STATE.subscription ? `<div class="topbar-sub" style="text-align:center">${STATE.subscription.used_slots}/${STATE.subscription.max_slots} slots</div>` : ""}
+      ${STATE.subscription ? `<div class="topbar-sub" style="text-align:center">${STATE.subscription.used_slots}/${STATE.subscription.max_slots} ${t("slots")}</div>` : ""}
     </div>
   `;
 }
@@ -540,8 +563,8 @@ function screenLanguage() {
 // Header per screen
 // ---------------------------------------------------------------------------
 const HEADER_META = {
-  home:     { title: () => t("appTitle"), sub: () => (STATE.subscription ? `${STATE.subscription.used_slots}/${STATE.subscription.max_slots} slots` : "") , action: "settings" },
-  detail:   { title: () => NAV.params.name, sub: () => NAV.params.unit || "", action: null },
+  home:     { title: () => t("appTitle"), sub: () => (STATE.subscription ? `${STATE.subscription.used_slots}/${STATE.subscription.max_slots} ${t("slots")}` : "") , action: "settings" },
+  detail:   { title: () => t("userbot"), sub: () => NAV.params.name || "", action: null },
   settings: { title: () => t("settings"), sub: () => "", action: null },
   language: { title: () => t("language"), sub: () => "", action: null },
   gate:     { title: () => t("appTitle"), sub: () => "", action: null },
@@ -607,10 +630,17 @@ function wireEvents(screen) {
     }
 
     // TODO: подставьте username вашего бота
-    tg?.openTelegramLink?.("https://t.me/UserBotHost_Bot?start=install");
+    openTelegramLink("https://t.me/UserBotHost_Bot?start=install");
   });
 
   if (screen === "home") {
+    document.getElementById("btn-refresh-bots")?.addEventListener("click", async (event) => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      button.innerHTML = `<span class="spinner"></span>${t("refresh")}`;
+      await loadAll();
+      haptic("success");
+    });
     document.querySelectorAll(".bot-card").forEach((card) => {
       card.addEventListener("click", () => {
         const bot = STATE.bots.find((b) => b.name === card.dataset.bot);
@@ -628,7 +658,7 @@ function wireEvents(screen) {
   if (screen === "settings") {
     document.getElementById("row-language")?.addEventListener("click", () => navigateTo("language"));
     document.getElementById("row-support")?.addEventListener("click", () => {
-      tg?.openTelegramLink?.("https://t.me/your_support_username");
+      openTelegramLink("https://t.me/userbothostchat");
     });
   }
 
@@ -661,7 +691,7 @@ async function handleBotAction(action, name) {
       danger: false,
       onAction: async () => {
         await notifyInstallRequest();
-        tg?.openTelegramLink?.("https://t.me/UserBotHost_Bot");
+        openTelegramLink("https://t.me/UserBotHost_Bot");
       },
     });
     return;
