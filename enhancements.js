@@ -26,6 +26,12 @@
     .layout-setting-row{cursor:pointer!important}.layout-setting-row:active{transform:scale(.995);background:var(--bg-card-hover)}
     .layout-setting-value{margin-left:auto;display:flex;align-items:center;gap:7px;color:var(--text-dim);font:600 12px var(--font-mono)}
     .layout-setting-value svg{width:15px;height:15px;color:var(--text-faint)}
+    .layout-columns{margin-left:auto;display:flex;align-items:center;gap:4px}
+    .layout-column-btn{width:28px;height:28px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--text-faint);font:700 11px var(--font-mono);cursor:pointer;transition:transform .12s,background .15s,color .15s,border-color .15s}
+    .layout-column-btn:hover{color:var(--text);background:var(--bg-elevated)}
+    .layout-column-btn:active{transform:scale(.9)}
+    .layout-column-btn.active{background:var(--blue-bg);border-color:rgba(59,130,246,.32);color:#8eb5ff}
+    .layout-order-row .list-row-label{font-weight:600}
     .reorder-screen{padding:0 0 18px;gap:10px;min-height:calc(100dvh - 70px)}
     .reorder-topbar{display:flex;align-items:center;gap:9px;padding:0 2px 7px}
     .reorder-back{width:34px;height:34px;border-radius:10px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-dim);display:flex;align-items:center;justify-content:center;cursor:pointer}.reorder-back svg{width:18px;height:18px}
@@ -42,7 +48,7 @@
     @media(max-width:520px){.reorder-card{padding:11px}.reorder-card-meta{font-size:8px}.reorder-name{font-size:13px}.reorder-grid{gap:7px}}
   `;
   function inject(){let s=document.getElementById('dhost-enhancements-style');if(!s){s=document.createElement('style');s.id='dhost-enhancements-style';document.head.appendChild(s)}s.textContent=STYLE}
-  function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+  function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;')}
   function sortState(list=STATE?.bots){if(!Array.isArray(list))return;const pos=new Map(order.map((n,i)=>[n,i]));list.sort((a,b)=>{const ap=pinned.includes(a.name),bp=pinned.includes(b.name);if(ap!==bp)return ap?-1:1;return(pos.get(a.name)??999999)-(pos.get(b.name)??999999)})}
   function normalizeOrder(names){const next=[];names.forEach(n=>{if(n&&!next.includes(n))next.push(n)});order.forEach(n=>{if(!next.includes(n))next.push(n)});(STATE?.bots||[]).forEach(b=>{if(!next.includes(b.name))next.push(b.name)});return next}
   function applyLayout(){document.querySelectorAll('.home-screen .bot-list').forEach(list=>{list.style.setProperty('--bot-columns',String(columns));list.dataset.columns=String(columns)})}
@@ -51,16 +57,20 @@
 
   function addLayoutRow(){
     if(typeof currentScreen!=='function'||currentScreen()!=='settings'||document.getElementById('dhost-layout-row'))return;
+    if(!STATE?.bots || STATE.bots.length<2)return;
     const cards=[...document.querySelectorAll('.list-card')];const target=cards[cards.length-1];if(!target)return;
     const section=document.createElement('div');section.className='section-label';section.textContent=LANG==='en'?'Interface':'Интерфейс';
-    const card=document.createElement('div');card.className='list-card';card.innerHTML=`<button type="button" class="list-row layout-setting-row" id="dhost-layout-row"><div class="list-row-label">В ряд</div><div class="layout-setting-value"><span>${columns}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div></button>`;
-    target.after(section,card);card.querySelector('#dhost-layout-row').addEventListener('click',openReorderScreen);
+    const card=document.createElement('div');card.className='list-card';card.innerHTML=`<div class="list-row layout-setting-row" id="dhost-layout-row"><div class="list-row-label">В ряд</div><div class="layout-columns" aria-label="Количество юзерботов в ряд">${[1,2,3,4].map(n=>`<button type="button" class="layout-column-btn ${columns===n?'active':''}" data-columns="${n}" aria-label="${n}">${n}</button>`).join('')}</div></div>`;
+    const orderCard=document.createElement('div');orderCard.className='list-card';orderCard.innerHTML='<button type="button" class="list-row layout-setting-row layout-order-row" id="dhost-order-row"><div class="list-row-label">Изменить порядок</div><div class="layout-setting-value"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></div></button>';
+    target.after(section,card,orderCard);
+    card.querySelectorAll('.layout-column-btn').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const n=Math.max(1,Math.min(4,Number(btn.dataset.columns)||1));columns=n;write(COL_KEY,columns);applyLayout();card.querySelectorAll('.layout-column-btn').forEach(x=>x.classList.toggle('active',Number(x.dataset.columns)===columns));haptic?.('light')}));
+    orderCard.querySelector('#dhost-order-row').addEventListener('click',openReorderScreen);
   }
 
   function reorderCards(){return (draftOrder||[]).map(name=>STATE.bots.find(b=>b.name===name)).filter(Boolean)}
   function reorderMarkup(){const bots=reorderCards();const cards=bots.map(b=>`<div class="reorder-card" data-reorder-bot="${esc(b.name)}"><div class="reorder-card-head"><div class="reorder-name">${esc(b.name)}</div><div class="reorder-status">${statusPill(b.status)}</div><button type="button" class="reorder-handle" aria-label="Переместить">${ICON_DRAG}</button></div><div class="reorder-card-meta"><span>${t('cpu')} ${Number(b.cpu_percent||0).toFixed(1)}%</span><span>${t('ram')} ${Math.round(Number(b.ram_used_mb)||0)}/${Math.round(Number(b.ram_limit_mb)||0)}MB</span></div></div>`).join('');return `<div class="screen reorder-screen"><div class="reorder-topbar"><button class="reorder-back" id="reorder-cancel" type="button">${ICON_BACK}</button><div><div class="reorder-title">Порядок юзерботов</div><div class="reorder-sub">Перетащите за значок, чтобы изменить порядок</div></div><button class="reorder-check" id="reorder-done" type="button" aria-label="Готово">${ICON_CHECK}</button></div><div class="reorder-grid" id="reorder-grid" style="--bot-columns:${columns}">${cards}</div></div>`}
 
-  function openReorderScreen(){if(!STATE?.bots?.length)return;sortState();draftOrder=STATE.bots.map(b=>b.name);reorderMode=true;document.getElementById('app').innerHTML=reorderMarkup();wireReorder();haptic?.('light')}
+  function openReorderScreen(){if(!STATE?.bots?.length || STATE.bots.length<2)return;sortState();draftOrder=STATE.bots.map(b=>b.name);reorderMode=true;document.getElementById('app').innerHTML=reorderMarkup();wireReorder();haptic?.('light')}
   function closeReorder(){reorderMode=false;drag=null;draftOrder=[];render()}
   function rerenderReorder(){if(!reorderMode)return;document.getElementById('app').innerHTML=reorderMarkup();wireReorder()}
 
