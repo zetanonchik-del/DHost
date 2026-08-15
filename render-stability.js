@@ -1,6 +1,6 @@
-/* DHost stability: live refreshes stay in-place; bot menus are never clipped. */
+/* DHost stability: live refreshes stay in-place; bot menus are never clipped or delayed. */
 (() => {
-  const STYLE_ID = 'dhost-stability-style-v2';
+  const STYLE_ID = 'dhost-stability-style-v3';
   if (!document.getElementById(STYLE_ID)) {
     const s = document.createElement('style');
     s.id = STYLE_ID;
@@ -13,6 +13,7 @@
     `;
     document.head.appendChild(s);
   }
+
   const home = () => { try { return typeof currentScreen === 'function' && currentScreen() === 'home'; } catch (_) { return false; } };
   const names = () => {
     const q = String(UI?.query || '').trim().toLowerCase(), f = UI?.filter || 'all';
@@ -23,10 +24,12 @@
   };
   const current = () => [...document.querySelectorAll('.home-screen .bot-list > .bot-card')].map(c => c.dataset.bot || '');
   const cols = () => { try { return Math.max(1, Math.min(4, Number(JSON.parse(localStorage.getItem('dhost.botColumns.v5'))) || 1)); } catch (_) { return 1; } };
-  /* Menu state is part of the key: opening/closing the menu renders once.
-     Polling keeps the same key and therefore updates cards in-place. */
+
+  // Menu state is part of the key: opening/closing/switching menus renders immediately.
+  // Polling keeps the same key and therefore updates cards in-place without touching the menu.
   const key = () => JSON.stringify({names:names(),columns:cols(),filter:UI?.filter||'all',menu:UI?.menu||null});
   let last = null;
+
   function updateInPlace(){
     const app=document.getElementById('app'); if(!app?.querySelector('.home-screen')) return false;
     const expected=names(), actual=current();
@@ -53,8 +56,31 @@
     document.querySelectorAll('.home-screen .bot-list').forEach(list=>list.style.setProperty('--grid-columns',String(Math.min(cols(),actual.length||1))));
     return true;
   }
+
+  function installFastMenu(){
+    if(window.__DHOST_FAST_MENU_V1) return;
+    const handler = (event) => {
+      const button = event.target?.closest?.('.bot-menu-button[data-menu-bot]');
+      if(!button || !home()) return;
+
+      // Take ownership before the older delegated handler can defer the change.
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      const name = button.getAttribute('data-menu-bot');
+      UI.menu = UI.menu === name ? null : name;
+      if(typeof render === 'function') render();
+    };
+
+    // Capture phase makes the menu response independent of the 3s polling cycle
+    // and prevents the old delegated click handler from fighting with it.
+    document.addEventListener('click', handler, true);
+    window.__DHOST_FAST_MENU_V1 = true;
+  }
+
   function install(){
-    if(window.__DHOST_STABLE_RENDER_V2||typeof window.render!=='function')return;
+    installFastMenu();
+    if(window.__DHOST_STABLE_RENDER_V3||typeof window.render!=='function')return;
     const original=window.render;
     window.render=function(){
       if(home()){
@@ -67,7 +93,7 @@
       last=home()?key():null;
       return result;
     };
-    window.__DHOST_STABLE_RENDER_V2=true;
+    window.__DHOST_STABLE_RENDER_V3=true;
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
