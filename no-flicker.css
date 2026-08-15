@@ -1,0 +1,21 @@
+/* Keep live 3s polling visually stable: data may update, but the whole screen must not fade/re-enter. */
+.screen,
+.topbar,
+.bot-card,
+.summary,
+.search-row,
+.filter-menu,
+.btn {
+  animation: none !important;
+}
+
+/* Preserve intentional micro-interactions while preventing refresh flashes. */
+.home-screen {
+  animation: none !important;
+}
+
+/* Smooth metric changes instead of a hard visual jump. */
+.meter-fill,
+.summary-progress > div {
+  transition: width .35s ease !important;
+}
