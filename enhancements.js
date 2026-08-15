@@ -15,7 +15,7 @@
   const PIN_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 4 16 16"/><path d="M14 4l6 6"/><path d="M17 7 7 17"/><path d="m5 19 4-4"/></svg>';
 
   const STYLE = `
-    .home-screen{grid-template-columns:repeat(var(--bot-columns,1),minmax(0,1fr));align-items:start}
+    .home-screen{display:grid!important;grid-template-columns:repeat(var(--bot-columns,1),minmax(0,1fr));align-items:start}
     .home-screen>.bot-card{grid-column:auto;min-width:0}
     .home-screen>:not(.bot-card){grid-column:1/-1}
     .bot-card.dragging{opacity:.72;transform:scale(.985);border-color:#3b82f6;box-shadow:0 14px 32px rgba(0,0,0,.35),0 0 0 1px rgba(59,130,246,.22);z-index:30}
