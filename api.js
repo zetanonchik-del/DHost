@@ -15,7 +15,7 @@
  */
 
 const USE_MOCKS = false;
-const BASE_URL = "https://completely-protest-differential-fought.trycloudflare.com";
+const BASE_URL = "https://adaptive-merchants-chamber-starting.trycloudflare.com";
 
 function authHeaders() {
   // initData уже содержит подписанные Telegram user.id, auth_date и т.д.
