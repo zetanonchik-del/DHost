@@ -1,12 +1,11 @@
-/* DHost layout settings cleanup.
+/* DHost settings cleanup.
  *
- * The actual "Interface" controls and reorder screen live in enhancements.js.
- * This file only removes the optional grid/column control so Settings keeps
- * one Interface section with the working "Изменить порядок" row.
+ * enhancements.js owns the working "Изменить порядок" screen. The base
+ * settings page already contains an empty legacy Interface block, while
+ * enhancements.js adds the real Interface block. We remove the legacy block
+ * after render, in the same animation frame, so it never visibly flickers.
  */
 (() => {
-  const ROOT = document.getElementById('app');
-
   function isSettings() {
     return typeof currentScreen === 'function' && currentScreen() === 'settings';
   }
@@ -14,37 +13,45 @@
   function cleanup() {
     if (!isSettings()) return;
 
-    // enhancements.js creates this row together with the reorder row.
-    // We intentionally keep the reorder row and remove only the grid setting.
-    const layoutRow = document.getElementById('dhost-layout-row');
-    if (layoutRow) {
-      const card = layoutRow.closest('.list-card');
-      const section = card?.previousElementSibling;
+    const labels = [...document.querySelectorAll('#app .section-label')].filter(el => {
+      const text = (el.textContent || '').trim().toLowerCase();
+      return text === 'интерфейс' || text === 'interface';
+    });
 
-      card?.remove();
+    // Keep the last Interface block — it is the one created by
+    // enhancements.js and contains the working reorder action.
+    if (labels.length < 2) return;
 
-      // The section label belongs to the removed grid card. Keep the single
-      // Interface label only for the remaining "Изменить порядок" card.
-      if (section?.classList.contains('section-label')) {
-        const text = (section.textContent || '').trim().toLowerCase();
-        if (text === 'интерфейс' || text === 'interface') section.remove();
+    labels.slice(0, -1).forEach(label => {
+      const next = label.nextElementSibling;
+      label.remove();
+
+      // The legacy Interface section has an empty list-card. Remove only
+      // that card; do not touch the real reorder card.
+      if (next?.classList.contains('list-card') && !next.querySelector('.layout-order-row')) {
+        next.remove();
       }
-    }
-
-    // Remove the legacy duplicate injected by older versions of this file.
-    document.querySelectorAll(
-      '.dhost-layout-settings-root,.dhost-order-card,#dhost-layout-row'
-    ).forEach(el => el.remove());
+    });
   }
 
-  const observer = new MutationObserver(() => {
-    if (isSettings()) cleanup();
-  });
+  function patchRender() {
+    if (window.__DHOST_SETTINGS_CLEANUP) return;
+    if (typeof window.render !== 'function') return;
+
+    const original = window.render;
+    window.render = function () {
+      original();
+      // enhancements.js schedules its DOM additions with requestAnimationFrame
+      // too. This callback is registered after it, so cleanup happens before
+      // the browser paints the resulting frame.
+      requestAnimationFrame(cleanup);
+    };
+    window.__DHOST_SETTINGS_CLEANUP = true;
+  }
 
   function boot() {
-    observer.observe(ROOT || document.body, { childList: true, subtree: true });
-    cleanup();
-    setInterval(cleanup, 300);
+    patchRender();
+    requestAnimationFrame(cleanup);
   }
 
   if (document.readyState === 'loading') {
