@@ -18,10 +18,21 @@
     });
   }
 
+  function syncLabels() {
+    if (typeof LANG === 'undefined') return;
+    const en = LANG === 'en';
+    const columnsLabel = document.querySelector('#dhost-columns-row .list-row-label');
+    if (columnsLabel) columnsLabel.textContent = en ? 'Bots per row' : 'В ряд';
+    const columnsRow = document.querySelector('#dhost-columns-row');
+    if (columnsRow) columnsRow.setAttribute('aria-label', en ? 'Number of userbots per row' : 'Количество юзерботов в ряд');
+    const orderLabel = document.querySelector('#dhost-order-row .list-row-label');
+    if (orderLabel) orderLabel.textContent = en ? 'Change order' : 'Изменить порядок';
+  }
+
   function addRow() {
     if (typeof currentScreen !== 'function' || currentScreen() !== 'settings') return;
     const orderRow = document.getElementById('dhost-order-row');
-    if (!orderRow || document.getElementById('dhost-columns-row')) return;
+    if (!orderRow || document.getElementById('dhost-columns-row')) { syncLabels(); return; }
 
     const orderCard = orderRow.closest('.list-card');
     if (!orderCard) return;
@@ -31,8 +42,8 @@
     card.id = 'dhost-columns-card';
     card.innerHTML = `
       <div class="list-row layout-setting-row" id="dhost-columns-row">
-        <div class="list-row-label">В ряд</div>
-        <div class="dhost-columns-buttons" aria-label="Количество юзерботов в ряд">
+        <div class="list-row-label">${typeof LANG !== 'undefined' && LANG === 'en' ? 'Bots per row' : 'В ряд'}</div>
+        <div class="dhost-columns-buttons" aria-label="${typeof LANG !== 'undefined' && LANG === 'en' ? 'Number of userbots per row' : 'Количество юзерботов в ряд'}">
           ${[1,2,3,4].map(n => `<button type="button" class="dhost-column-btn${read() === n ? ' active' : ''}" data-columns="${n}">${n}</button>`).join('')}
         </div>
       </div>`;
@@ -50,6 +61,7 @@
         if (typeof haptic === 'function') haptic('light');
       });
     });
+    syncLabels();
   }
 
   const style = document.createElement('style');
@@ -75,9 +87,11 @@
   function boot() {
     addRow();
     applyColumns();
+    syncLabels();
     const observer = new MutationObserver(() => {
       addRow();
       applyColumns();
+      syncLabels();
     });
     observer.observe(document.getElementById('app') || document.body, { childList: true, subtree: true });
   }
