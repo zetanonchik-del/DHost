@@ -16,7 +16,8 @@
 
   const home = () => { try { return typeof currentScreen === 'function' && currentScreen() === 'home'; } catch (_) { return false; } };
   const names = () => {
-    const q = String(UI?.query || '').trim().toLowerCase(), f = UI?.filter || 'all';
+    const ui = window.DHOST_UI;
+    const q = String(ui?.query || '').trim().toLowerCase(), f = ui?.filter || 'all';
     return (STATE?.bots || []).filter(b => {
       const qok = !q || `${b.name} ${b.unit || ''} ${b.platform || ''}`.toLowerCase().includes(q);
       return qok && (f === 'all' || b.status === f);
@@ -27,7 +28,7 @@
 
   // Menu state is part of the key. Unlike ordinary resource polling, a menu-state
   // change must force the real render so the menu DOM is actually created/removed.
-  const key = () => JSON.stringify({names:names(),columns:cols(),filter:UI?.filter||'all',menu:UI?.menu||null});
+  const key = () => JSON.stringify({names:names(),columns:cols(),filter:window.DHOST_UI?.filter||'all',menu:window.DHOST_UI?.menu||null});
   let last = null;
 
   function updateInPlace(){
@@ -67,7 +68,9 @@
       event.stopImmediatePropagation();
 
       const name = button.getAttribute('data-menu-bot');
-      UI.menu = UI.menu === name ? null : name;
+      const ui = window.DHOST_UI;
+      if (!ui) return;
+      ui.menu = ui.menu === name ? null : name;
       // render-stability normally updates resource values in-place. Force the
       // real render for this interaction so the three-dot menu appears instantly.
       window.__DHOST_FORCE_RENDER = true;
