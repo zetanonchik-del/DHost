@@ -133,7 +133,7 @@
       return;
     }
     showInstallHint();
-    setTimeout(() => safeTelegramOpen('https://t.me/UserBotHost_Bot?start=install'), 2000);
+    setTimeout(() => safeTelegramOpen('https://t.me/UserBotHost_Bot?start=install'), 1000);
   }
 
   function timeoutPromise(ms) { return new Promise((_, reject) => setTimeout(() => reject(new Error('refresh_timeout')), ms)); }
