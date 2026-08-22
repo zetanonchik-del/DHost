@@ -21,12 +21,20 @@
   function syncLabels() {
     if (typeof LANG === 'undefined') return;
     const en = LANG === 'en';
+    // IMPORTANT: only write when the value actually changes. This function runs
+    // from a MutationObserver callback that watches #app; an unconditional
+    // textContent/setAttribute write is itself a mutation, which re-triggers
+    // the same observer and causes an infinite mutate->notify->mutate loop
+    // (this is what froze the Settings screen when there were 2+ userbots).
     const columnsLabel = document.querySelector('#dhost-columns-row .list-row-label');
-    if (columnsLabel) columnsLabel.textContent = en ? 'Bots per row' : 'В ряд';
+    const columnsText = en ? 'Bots per row' : 'В ряд';
+    if (columnsLabel && columnsLabel.textContent !== columnsText) columnsLabel.textContent = columnsText;
     const columnsRow = document.querySelector('#dhost-columns-row');
-    if (columnsRow) columnsRow.setAttribute('aria-label', en ? 'Number of userbots per row' : 'Количество юзерботов в ряд');
+    const columnsAria = en ? 'Number of userbots per row' : 'Количество юзерботов в ряд';
+    if (columnsRow && columnsRow.getAttribute('aria-label') !== columnsAria) columnsRow.setAttribute('aria-label', columnsAria);
     const orderLabel = document.querySelector('#dhost-order-row .list-row-label');
-    if (orderLabel) orderLabel.textContent = en ? 'Change order' : 'Изменить порядок';
+    const orderText = en ? 'Change order' : 'Изменить порядок';
+    if (orderLabel && orderLabel.textContent !== orderText) orderLabel.textContent = orderText;
   }
 
   function addRow() {
