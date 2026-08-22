@@ -25,6 +25,7 @@
     .search-box { touch-action: manipulation; }
     .home-top-action:disabled { opacity: .65; pointer-events: none; }
     .dhost-hidden-search { display: none !important; }
+    .dhost-install-hint { position: fixed; left: 50%; bottom: max(22px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 1000000; max-width: calc(100vw - 32px); pointer-events: none; }
   `;
 
   function installStyle() {
@@ -103,6 +104,22 @@
     return false;
   }
 
+  function showInstallHint() {
+    const message = typeof LANG !== 'undefined' && LANG === 'en' ? 'Go to the bot chat' : 'Перейдите в чат с ботом';
+    if (typeof window.toast === 'function') {
+      window.toast(message, 'ok');
+      return;
+    }
+    const old = document.querySelector('.dhost-install-hint');
+    old?.remove();
+    const el = document.createElement('div');
+    el.className = 'toast-wrap dhost-install-hint';
+    el.innerHTML = `<div class="toast ok"><span>${message}</span></div>`;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => el.querySelector('.toast')?.classList.add('show'));
+    setTimeout(() => { el.querySelector('.toast')?.classList.remove('show'); setTimeout(() => el.remove(), 180); }, 2000);
+  }
+
   async function openInstallFlowFixed() {
     if (typeof window.haptic === 'function') window.haptic('medium');
     const sub = STATE?.subscription;
@@ -115,7 +132,8 @@
       });
       return;
     }
-    safeTelegramOpen('https://t.me/UserBotHost_Bot?start=install');
+    showInstallHint();
+    setTimeout(() => safeTelegramOpen('https://t.me/UserBotHost_Bot?start=install'), 2000);
   }
 
   function timeoutPromise(ms) { return new Promise((_, reject) => setTimeout(() => reject(new Error('refresh_timeout')), ms)); }
@@ -164,38 +182,6 @@
     }, true);
   }
 
-  // The three-dot menu is rendered by ui-v2.js. Its original listeners are
-  // attached to newly rendered nodes, so polling can replace them mid-touch.
-  // Handle menu actions here in capture phase: one stable delegated handler
-  // works on both touch and mouse and prevents the card click from stealing it.
-  function installBotMenuActionGuard() {
-    if (window.__DHOST_V3_MENU_ACTION_GUARD) return;
-    window.__DHOST_V3_MENU_ACTION_GUARD = true;
-    const run = (event) => {
-      const action = event.target?.closest?.('.bot-action[data-menu-action]');
-      if (!action) return;
-      const menu = action.closest('.bot-actions');
-      if (!menu) return;
-      const name = action.dataset.menuName;
-      const type = action.dataset.menuAction;
-      if (!name || !type) return;
-
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      if (window.DHOST_UI) window.DHOST_UI.menu = null;
-
-      if (type === 'detail') {
-        if (typeof window.navigateTo === 'function') window.navigateTo('detail', { name });
-        return;
-      }
-      if (typeof window.handleBotAction === 'function') {
-        Promise.resolve(window.handleBotAction(type, name)).catch((error) => console.error('DHost menu action', error));
-      }
-    };
-    document.addEventListener('pointerup', run, true);
-    document.addEventListener('click', run, true);
-  }
-
   function patchButtons() {
     if (typeof window.openInstallFlow === 'function' && !window.__DHOST_V3_INSTALL_PATCHED) {
       window.openInstallFlow = openInstallFlowFixed;
@@ -214,7 +200,6 @@
     installSearchGuard();
     installOutsideMenuClose();
     installRefreshButtonGuard();
-    installBotMenuActionGuard();
     applySearchVisibility();
   }
 
