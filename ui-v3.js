@@ -5,6 +5,7 @@
   let originalRender = null;
   let renderWrapped = false;
   let searchInputEvent = false;
+  let userInteractionRender = false;
   let manualRefresh = false;
 
   const css = `
@@ -46,7 +47,7 @@
   function applySearchVisibility() {
     const row = document.querySelector('.search-row');
     const filter = document.getElementById('filter-menu');
-    const shouldShow = Array.isArray(window.STATE?.bots) && window.STATE.bots.length > 5;
+    const shouldShow = Array.isArray(STATE?.bots) && STATE.bots.length > 5;
     if (row) row.classList.toggle('dhost-hidden-search', !shouldShow);
     if (!shouldShow && filter) filter.style.display = 'none';
   }
@@ -67,7 +68,8 @@
     if (renderWrapped || typeof window.render !== 'function') return;
     originalRender = window.render;
     window.render = function stableRender(...args) {
-      if (!searchInputEvent && !manualRefresh && searchIsActive()) return;
+      if (!searchInputEvent && !userInteractionRender && !manualRefresh && searchIsActive()) return;
+      userInteractionRender = false;
       const result = originalRender.apply(this, args);
       applySearchVisibility();
       return result;
@@ -82,6 +84,12 @@
       if (event.target?.id !== 'bot-search') return;
       searchInputEvent = true;
       queueMicrotask(() => { searchInputEvent = false; });
+    }, true);
+    document.addEventListener('pointerdown', (event) => {
+      if (event.target?.closest?.('button, .filter-chip, .bot-menu-button, .bot-action, .bot-card')) {
+        userInteractionRender = true;
+        setTimeout(() => { userInteractionRender = false; }, 0);
+      }
     }, true);
   }
 
@@ -105,7 +113,7 @@
 
   async function openInstallFlowFixed() {
     if (typeof window.haptic === 'function') window.haptic('medium');
-    const sub = window.STATE?.subscription;
+    const sub = STATE?.subscription;
     if (sub && sub.used_slots >= sub.max_slots) {
       window.openInfoSheet?.({
         icon: window.ICON?.alertCircle,
@@ -132,14 +140,14 @@
 
     try {
       const auth = await Promise.race([window.fetchAuthStatus(), timeoutPromise(REFRESH_TIMEOUT)]);
-      window.STATE.authorized = auth.authorized;
+      STATE.authorized = auth.authorized;
       if (auth.authorized) {
         const result = await Promise.race([
           Promise.all([window.fetchBots(), window.fetchSubscription()]),
           timeoutPromise(REFRESH_TIMEOUT),
         ]);
-        window.STATE.bots = result[0];
-        window.STATE.subscription = result[1];
+        STATE.bots = result[0];
+        STATE.subscription = result[1];
       }
       originalRender?.();
       applySearchVisibility();
