@@ -17,7 +17,7 @@
       pointer-events: auto !important;
       isolation: isolate;
     }
-    .bot-actions .bot-action { position: relative; z-index: 1; }
+    .bot-actions .bot-action { position: relative; z-index: 100000 !important; pointer-events: auto !important; }
     .home-top-actions, .home-top-action, .bot-menu-button,
     #btn-open-bot, #btn-open-top, #btn-refresh-top, #btn-filter,
     .filter-chip { position: relative; z-index: 2; touch-action: manipulation; }
@@ -39,9 +39,7 @@
     const input = document.getElementById('bot-search');
     const filter = document.getElementById('filter-menu');
     const menu = document.querySelector('.bot-actions');
-    return document.activeElement === input ||
-      !!menu ||
-      !!(filter && getComputedStyle(filter).display !== 'none');
+    return document.activeElement === input || !!menu || !!(filter && getComputedStyle(filter).display !== 'none');
   }
 
   function applySearchVisibility() {
@@ -100,14 +98,8 @@
         return true;
       }
     } catch (_) {}
-    try {
-      window.location.href = url;
-      return true;
-    } catch (_) {}
-    try {
-      window.open(url, '_blank', 'noopener,noreferrer');
-      return true;
-    } catch (_) {}
+    try { window.location.href = url; return true; } catch (_) {}
+    try { window.open(url, '_blank', 'noopener,noreferrer'); return true; } catch (_) {}
     return false;
   }
 
@@ -119,17 +111,14 @@
         icon: window.ICON?.alertCircle,
         title: window.t?.('limitReachedTitle') || 'Лимит слотов исчерпан',
         text: window.t?.('limitReachedText') || 'Освободите слот или продлите подписку.',
-        actionLabel: window.t?.('limitOk') || 'Понятно',
-        danger: true,
+        actionLabel: window.t?.('limitOk') || 'Понятно', danger: true,
       });
       return;
     }
     safeTelegramOpen('https://t.me/UserBotHost_Bot?start=install');
   }
 
-  function timeoutPromise(ms) {
-    return new Promise((_, reject) => setTimeout(() => reject(new Error('refresh_timeout')), ms));
-  }
+  function timeoutPromise(ms) { return new Promise((_, reject) => setTimeout(() => reject(new Error('refresh_timeout')), ms)); }
 
   async function refreshFixed() {
     if (manualRefresh) return;
@@ -137,7 +126,6 @@
     const button = document.getElementById('btn-refresh-top');
     button?.classList.add('spinning');
     if (button) button.disabled = true;
-
     try {
       const auth = await Promise.race([window.fetchAuthStatus(), timeoutPromise(REFRESH_TIMEOUT)]);
       STATE.authorized = auth.authorized;
@@ -176,6 +164,38 @@
     }, true);
   }
 
+  // The three-dot menu is rendered by ui-v2.js. Its original listeners are
+  // attached to newly rendered nodes, so polling can replace them mid-touch.
+  // Handle menu actions here in capture phase: one stable delegated handler
+  // works on both touch and mouse and prevents the card click from stealing it.
+  function installBotMenuActionGuard() {
+    if (window.__DHOST_V3_MENU_ACTION_GUARD) return;
+    window.__DHOST_V3_MENU_ACTION_GUARD = true;
+    const run = (event) => {
+      const action = event.target?.closest?.('.bot-action[data-menu-action]');
+      if (!action) return;
+      const menu = action.closest('.bot-actions');
+      if (!menu) return;
+      const name = action.dataset.menuName;
+      const type = action.dataset.menuAction;
+      if (!name || !type) return;
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (window.DHOST_UI) window.DHOST_UI.menu = null;
+
+      if (type === 'detail') {
+        if (typeof window.navigateTo === 'function') window.navigateTo('detail', { name });
+        return;
+      }
+      if (typeof window.handleBotAction === 'function') {
+        Promise.resolve(window.handleBotAction(type, name)).catch((error) => console.error('DHost menu action', error));
+      }
+    };
+    document.addEventListener('pointerup', run, true);
+    document.addEventListener('click', run, true);
+  }
+
   function patchButtons() {
     if (typeof window.openInstallFlow === 'function' && !window.__DHOST_V3_INSTALL_PATCHED) {
       window.openInstallFlow = openInstallFlowFixed;
@@ -194,14 +214,12 @@
     installSearchGuard();
     installOutsideMenuClose();
     installRefreshButtonGuard();
+    installBotMenuActionGuard();
     applySearchVisibility();
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', apply, { once: true });
-  } else {
-    apply();
-  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply, { once: true });
+  else apply();
 
   const observer = new MutationObserver(() => {
     patchButtons();
