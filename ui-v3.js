@@ -164,6 +164,18 @@
     }
   }
 
+  function installRefreshButtonGuard() {
+    if (window.__DHOST_V3_REFRESH_GUARD) return;
+    window.__DHOST_V3_REFRESH_GUARD = true;
+    document.addEventListener('click', (event) => {
+      const button = event.target?.closest?.('#btn-refresh-top');
+      if (!button) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      refreshFixed();
+    }, true);
+  }
+
   function patchButtons() {
     if (typeof window.openInstallFlow === 'function' && !window.__DHOST_V3_INSTALL_PATCHED) {
       window.openInstallFlow = openInstallFlowFixed;
@@ -181,6 +193,7 @@
     patchButtons();
     installSearchGuard();
     installOutsideMenuClose();
+    installRefreshButtonGuard();
     applySearchVisibility();
   }
 
