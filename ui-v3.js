@@ -9,7 +9,7 @@
   let manualRefresh = false;
 
   const css = `
-    .bot-card { overflow: visible !important; }
+    .bot-card { overflow: visible !important; position: relative; }
     .bot-list { overflow: visible !important; }
     .bot-actions {
       z-index: 99999 !important;
@@ -26,6 +26,29 @@
     .home-top-action:disabled { opacity: .65; pointer-events: none; }
     .dhost-hidden-search { display: none !important; }
     .dhost-install-hint { position: fixed; left: 50%; bottom: max(22px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 1000000; max-width: calc(100vw - 32px); pointer-events: none; }
+
+    /* Chat button on bot card */
+    .btn-chats {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      padding: 8px 12px;
+      margin-top: 8px;
+      background: var(--bg-secondary, #1a1a24);
+      border: 1px solid var(--border, #2a2a3a);
+      border-radius: 8px;
+      color: var(--text-primary, #e0e0e8);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      touch-action: manipulation;
+    }
+    .btn-chats:hover { background: var(--bg-hover, #2a2a3e); }
+    .btn-chats:active { background: var(--bg-active, #3a3a4e); border-color: var(--accent, #4a9eff); }
+    .btn-chats svg { width: 18px; height: 18px; flex-shrink: 0; }
   `;
 
   function installStyle() {
@@ -71,9 +94,32 @@
       userInteractionRender = false;
       const result = originalRender.apply(this, args);
       applySearchVisibility();
+      // Re-wire chat buttons after render
+      wireChatButtons();
       return result;
     };
     renderWrapped = true;
+  }
+
+  function wireChatButtons() {
+    document.querySelectorAll('.btn-chats').forEach((btn) => {
+      // Remove old listener to avoid duplicates
+      btn.removeEventListener('click', handleChatClick);
+      btn.addEventListener('click', handleChatClick);
+    });
+  }
+
+  function handleChatClick(e) {
+    e.stopPropagation();
+    const botName = this.dataset.bot;
+    if (!botName) return;
+    if (typeof window.navigateTo === 'function') {
+      window.navigateTo('chats', { botName });
+    } else if (typeof window.DHOST_UI?.showDialogs === 'function') {
+      window.DHOST_UI.showDialogs(botName);
+    } else {
+      console.warn('DHost: navigateTo or DHOST_UI.showDialogs not found');
+    }
   }
 
   function installSearchGuard() {
@@ -157,6 +203,7 @@
       }
       originalRender?.();
       applySearchVisibility();
+      wireChatButtons();
       window.haptic?.('success');
     } catch (error) {
       console.warn('DHost manual refresh failed', error);
@@ -191,7 +238,15 @@
       window.refreshHome = refreshFixed;
       window.__DHOST_V3_REFRESH_PATCHED = true;
     }
+    // Patch DHOST_UI.showDialogs if exists
+    if (window.DHOST_UI && !window.__DHOST_V3_CHATS_PATCHED) {
+      // Store original if needed
+      window.__DHOST_V3_CHATS_PATCHED = true;
+    }
   }
+
+  // Expose chat button wiring for app.js
+  window.wireChatButtons = wireChatButtons;
 
   function apply() {
     installStyle();
@@ -201,6 +256,7 @@
     installOutsideMenuClose();
     installRefreshButtonGuard();
     applySearchVisibility();
+    wireChatButtons();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply, { once: true });
@@ -209,6 +265,7 @@
   const observer = new MutationObserver(() => {
     patchButtons();
     applySearchVisibility();
+    wireChatButtons();
   });
   if (document.body) observer.observe(document.body, { childList: true, subtree: true });
 })();
