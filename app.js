@@ -55,13 +55,10 @@ const ICON = {
   send: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>`,
 };
 
-// ---------------------------------------------------------------------------
-// ADMIN IDs
-// ---------------------------------------------------------------------------
-const ADMIN_IDS = [6112843760, 5011043349];
-
-function isAdmin(userId) {
-  return ADMIN_IDS.includes(Number(userId));
+// Право на чаты выдаёт бэкенд из ADMIN_IDS в .env. Не храним список
+// админов в браузере, чтобы он не расходился с конфигурацией сервера.
+function isAdmin() {
+  return Boolean(STATE?.canManageChats);
 }
 
 // ---------------------------------------------------------------------------
@@ -370,6 +367,7 @@ const STATE = {
   authorized: null,
   bots: [],
   subscription: null,
+  canManageChats: false,
   loading: true,
 };
 
@@ -379,6 +377,7 @@ async function loadAll() {
   try {
     const auth = await fetchAuthStatus();
     STATE.authorized = auth.authorized;
+    STATE.canManageChats = Boolean(auth.can_manage_chats);
     if (auth.authorized) {
       const [bots, sub] = await Promise.all([fetchBots(), fetchSubscription()]);
       STATE.bots = bots;
@@ -444,8 +443,7 @@ function screenHome() {
     `;
   }
 
-  const userId = getCurrentUserId();
-  const userIsAdmin = isAdmin(userId);
+  const userIsAdmin = isAdmin();
 
   const cards = STATE.bots.map((b) => {
     const cpuPct = Math.min(b.cpu_percent, 100);
@@ -615,8 +613,7 @@ function screenChats() {
   const botName = NAV.params.botName;
   if (!botName) return `<div class="screen"><div class="gate-text">${t("loadError")}</div></div>`;
 
-  const userId = getCurrentUserId();
-  if (!isAdmin(userId)) {
+  if (!isAdmin()) {
     toast(t("noAccess"), "err");
     setTimeout(() => goBack(), 500);
     return `<div class="screen"><div class="gate-text">${t("noAccess")}</div></div>`;

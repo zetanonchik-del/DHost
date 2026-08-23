@@ -19,6 +19,7 @@
     try {
       const auth = await fetchAuthStatus();
       STATE.authorized = auth.authorized;
+      STATE.canManageChats = Boolean(auth.can_manage_chats);
 
       if (auth.authorized) {
         const [bots, sub] = await Promise.all([fetchBots(), fetchSubscription()]);

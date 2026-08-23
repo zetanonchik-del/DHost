@@ -193,6 +193,7 @@
     try {
       const auth = await Promise.race([window.fetchAuthStatus(), timeoutPromise(REFRESH_TIMEOUT)]);
       STATE.authorized = auth.authorized;
+      STATE.canManageChats = Boolean(auth.can_manage_chats);
       if (auth.authorized) {
         const result = await Promise.race([
           Promise.all([window.fetchBots(), window.fetchSubscription()]),
