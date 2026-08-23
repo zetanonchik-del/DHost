@@ -377,7 +377,9 @@ let MOCK_SUBSCRIPTION = {
 // ==========================================================================
 // ЭКСПОРТ (если используется модульная система)
 // ==========================================================================
-export {
+// api.js is loaded as a classic script, so ES-module `export` would abort
+// the entire file before app.js can call these functions.
+window.DHostAPI = {
   fetchBots,
   fetchSubscription,
   botAction,
