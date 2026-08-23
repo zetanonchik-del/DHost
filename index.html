@@ -15,6 +15,18 @@
 <div id="app" class="app">
   <div class="boot-screen" id="boot-screen"><div class="boot-prompt"><span class="boot-line">$ systemctl status userbot-control</span><span class="boot-line boot-cursor">_</span></div></div>
 </div>
+
+<!-- ===== КОНТЕЙНЕРЫ ДЛЯ ЧАТОВ ===== -->
+<!-- Список чатов -->
+<div id="dialogContainer" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#0a0a0f; z-index:1000; overflow-y:auto;">
+    <div id="dialogContent"></div>
+</div>
+
+<!-- Окно переписки -->
+<div id="chatContainer" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#0a0a0f; z-index:1001; overflow-y:auto; flex-direction:column;">
+    <div id="chatContent"></div>
+</div>
+
 <script src="api.js"></script>
 <script src="app.js"></script>
 <script src="refresh-controller.js?v=1"></script>
