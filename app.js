@@ -51,6 +51,8 @@ const ICON = {
   checkCircle: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
   alertCircle: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
   xCircle: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+  chats: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+  send: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>`,
 };
 
 // ---------------------------------------------------------------------------
@@ -105,6 +107,18 @@ const STR = {
     limitReachedText: "Освободите слот (удалите один из существующих юзерботов) или продлите подписку, чтобы установить новый.",
     limitOk: "Понятно",
     manageSlots: "Управление слотами",
+    chats: "Чаты",
+    noChats: "Нет чатов",
+    typeMessage: "Написать...",
+    edit: "Редактировать",
+    deleteMsg: "Удалить",
+    confirmDeleteMsg: "Удалить сообщение?",
+    msgDeleted: "Сообщение удалено",
+    msgEdited: "Сообщение отредактировано",
+    msgSent: "Сообщение отправлено",
+    msgError: "Ошибка при отправке",
+    loadError: "Не удалось загрузить чаты",
+    back: "Назад",
   },
   en: {
     appTitle: "Userbots",
@@ -154,6 +168,18 @@ const STR = {
     limitReachedText: "Free up a slot (delete one of your existing userbots) or extend your subscription to install a new one.",
     limitOk: "Got it",
     manageSlots: "Manage slots",
+    chats: "Chats",
+    noChats: "No chats",
+    typeMessage: "Type a message...",
+    edit: "Edit",
+    deleteMsg: "Delete",
+    confirmDeleteMsg: "Delete this message?",
+    msgDeleted: "Message deleted",
+    msgEdited: "Message edited",
+    msgSent: "Message sent",
+    msgError: "Error sending message",
+    loadError: "Failed to load chats",
+    back: "Back",
   },
 };
 
@@ -302,6 +328,12 @@ function fmtDate(iso) {
   return d.toLocaleDateString(LANG === "ru" ? "ru-RU" : "en-US", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+function fmtTime(date) {
+  if (!date) return "";
+  const d = new Date(date * 1000);
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
 const STATUS_META = {
   running:     { cls: "status-running",     label: { ru: "работает",      en: "running" } },
   stopped:     { cls: "status-stopped",     label: { ru: "остановлен",    en: "stopped" } },
@@ -423,6 +455,7 @@ function screenHome() {
           <span>${t("created")} ${fmtDate(b.created_at)}</span>
           <span>${b.platform} · ${fmtUptime(b.uptime_seconds)}</span>
         </div>
+        <button class="btn btn-chats" data-bot="${b.name}" style="margin-top:8px;width:100%;background:var(--bg-secondary);border:1px solid var(--border);">${ICON.chats} ${t("chats")}</button>
       </div>
     `;
   }).join("");
@@ -558,6 +591,51 @@ function screenLanguage() {
 }
 
 // ---------------------------------------------------------------------------
+// SCREEN: CHATS
+// ---------------------------------------------------------------------------
+function screenChats() {
+  const botName = NAV.params.botName;
+  if (!botName) return `<div class="screen"><div class="gate-text">${t("loadError")}</div></div>`;
+
+  return `
+    <div class="screen" id="chats-screen">
+      <div id="dialog-list-container">
+        <div class="chat-list" id="dialog-list">
+          <div class="loading-spinner">${t("loading")}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ---------------------------------------------------------------------------
+// SCREEN: CHAT
+// ---------------------------------------------------------------------------
+function screenChat() {
+  const botName = NAV.params.botName;
+  const chatId = NAV.params.chatId;
+  const chatName = NAV.params.chatName || "Chat";
+
+  if (!botName || !chatId) {
+    return `<div class="screen"><div class="gate-text">${t("loadError")}</div></div>`;
+  }
+
+  return `
+    <div class="screen" id="chat-screen">
+      <div class="chat-messages-container" id="chat-messages-container">
+        <div id="chat-messages" class="chat-messages">
+          <div class="loading-spinner">${t("loading")}</div>
+        </div>
+      </div>
+      <div class="chat-input-area">
+        <input type="text" id="chat-input" placeholder="${t("typeMessage")}" />
+        <button id="chat-send-btn">${ICON.send}</button>
+      </div>
+    </div>
+  `;
+}
+
+// ---------------------------------------------------------------------------
 // Header per screen
 // ---------------------------------------------------------------------------
 const HEADER_META = {
@@ -566,6 +644,8 @@ const HEADER_META = {
   settings: { title: () => t("settings"), sub: () => "", action: null },
   language: { title: () => t("language"), sub: () => "", action: null },
   gate:     { title: () => t("appTitle"), sub: () => "", action: null },
+  chats:    { title: () => t("chats"), sub: () => NAV.params.botName || "", action: null },
+  chat:     { title: () => NAV.params.chatName || "Chat", sub: () => "", action: null },
 };
 
 function renderHeader(screen) {
@@ -597,6 +677,8 @@ function render() {
     detail: screenDetail,
     settings: screenSettings,
     language: screenLanguage,
+    chats: screenChats,
+    chat: screenChat,
   }[screen]();
 
   app.innerHTML = renderHeader(screen) + body;
@@ -604,13 +686,167 @@ function render() {
   wireEvents(screen);
 }
 
+async function loadDialogs(botName) {
+  const list = document.getElementById("dialog-list");
+  if (!list) return;
+  
+  try {
+    const dialogs = await fetchDialogs(botName);
+    
+    if (!dialogs || dialogs.length === 0) {
+      list.innerHTML = `<div class="no-chats">${t("noChats")}</div>`;
+      return;
+    }
+    
+    list.innerHTML = dialogs.map(d => `
+      <div class="dialog-item" data-chat-id="${d.id}" data-chat-name="${d.name.replace(/'/g, "\\'")}">
+        <div class="dialog-avatar ${d.type}">${d.name.charAt(0).toUpperCase()}</div>
+        <div class="dialog-info">
+          <div class="dialog-name">${d.name}</div>
+          <div class="dialog-last-msg">${d.last_msg || ""}</div>
+        </div>
+        <div class="dialog-meta">
+          ${d.unread > 0 ? `<span class="dialog-unread">${d.unread}</span>` : ""}
+          <span class="dialog-time">${d.date ? fmtTime(d.date) : ""}</span>
+        </div>
+      </div>
+    `).join("");
+    
+    // Wire click events
+    list.querySelectorAll(".dialog-item").forEach(el => {
+      el.addEventListener("click", () => {
+        const chatId = el.dataset.chatId;
+        const chatName = el.dataset.chatName;
+        navigateTo("chat", { botName, chatId, chatName });
+      });
+    });
+  } catch (e) {
+    console.error("Failed to load dialogs", e);
+    list.innerHTML = `<div class="no-chats">${t("loadError")}</div>`;
+  }
+}
+
+async function loadMessages(botName, chatId) {
+  const container = document.getElementById("chat-messages");
+  if (!container) return;
+  
+  try {
+    const data = await fetchMessages(botName, chatId, 50);
+    const messages = data.messages || [];
+    
+    if (messages.length === 0) {
+      container.innerHTML = `<div class="no-messages">${t("noChats")}</div>`;
+      return;
+    }
+    
+    container.innerHTML = messages.map(msg => `
+      <div class="message-item ${msg.is_me ? "outgoing" : "incoming"}" data-msg-id="${msg.id}">
+        ${!msg.is_me ? `<div class="msg-sender">${msg.sender_name}</div>` : ""}
+        <div class="msg-text">${msg.text || "📎 Media"}</div>
+        <div class="msg-time">${fmtTime(msg.date)}${msg.edited ? " ✎" : ""}</div>
+        ${msg.is_me ? `
+          <div class="msg-actions">
+            <button class="msg-edit-btn" data-msg-id="${msg.id}">✏️</button>
+            <button class="msg-delete-btn" data-msg-id="${msg.id}">🗑️</button>
+          </div>
+        ` : ""}
+      </div>
+    `).join("");
+    
+    // Scroll to bottom
+    const containerParent = document.getElementById("chat-messages-container");
+    if (containerParent) containerParent.scrollTop = containerParent.scrollHeight;
+    
+    // Wire message actions
+    container.querySelectorAll(".msg-edit-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const msgId = parseInt(btn.dataset.msgId);
+        handleEditMessage(botName, chatId, msgId);
+      });
+    });
+    
+    container.querySelectorAll(".msg-delete-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const msgId = parseInt(btn.dataset.msgId);
+        handleDeleteMessage(botName, chatId, msgId);
+      });
+    });
+    
+  } catch (e) {
+    console.error("Failed to load messages", e);
+    container.innerHTML = `<div class="no-messages">${t("loadError")}</div>`;
+  }
+}
+
+async function handleSendMessage(botName, chatId) {
+  const input = document.getElementById("chat-input");
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  
+  input.value = "";
+  input.disabled = true;
+  
+  try {
+    const result = await sendMessage(botName, chatId, text);
+    if (result.success) {
+      toast(t("msgSent"), "ok");
+      await loadMessages(botName, chatId);
+    } else {
+      throw new Error(result.error || "unknown");
+    }
+  } catch (e) {
+    console.error("Failed to send message", e);
+    toast(t("msgError"), "err");
+    input.value = text;
+  } finally {
+    input.disabled = false;
+    input.focus();
+  }
+}
+
+async function handleEditMessage(botName, chatId, msgId) {
+  const newText = prompt(t("edit"));
+  if (newText === null || !newText.trim()) return;
+  
+  try {
+    const result = await editMessage(botName, chatId, msgId, newText.trim());
+    if (result.success) {
+      toast(t("msgEdited"), "ok");
+      await loadMessages(botName, chatId);
+    } else {
+      throw new Error(result.error || "unknown");
+    }
+  } catch (e) {
+    console.error("Failed to edit message", e);
+    toast(t("actionError"), "err");
+  }
+}
+
+async function handleDeleteMessage(botName, chatId, msgId) {
+  if (!confirm(t("confirmDeleteMsg"))) return;
+  
+  try {
+    const result = await deleteMessage(botName, chatId, msgId);
+    if (result.success) {
+      toast(t("msgDeleted"), "ok");
+      await loadMessages(botName, chatId);
+    } else {
+      throw new Error(result.error || "unknown");
+    }
+  } catch (e) {
+    console.error("Failed to delete message", e);
+    toast(t("actionError"), "err");
+  }
+}
+
 function wireEvents(screen) {
   document.getElementById("btn-back")?.addEventListener("click", goBack);
   document.getElementById("btn-settings")?.addEventListener("click", () => navigateTo("settings"));
 
   // "Открыть чат с ботом" — вся авторизация и установка остаются там.
-  // Перед этим проверяем лимит слотов, чтобы не гонять человека в чат
-  // просто ради сообщения "лимит исчерпан" — покажем сразу здесь.
   document.getElementById("btn-open-bot")?.addEventListener("click", async () => {
     haptic("medium");
     const sub = STATE.subscription || (await fetchSubscription());
@@ -627,7 +863,6 @@ function wireEvents(screen) {
       return;
     }
 
-    // TODO: подставьте username вашего бота
     openTelegramLink("https://t.me/UserBotHost_Bot?start=install");
   });
 
@@ -639,10 +874,20 @@ function wireEvents(screen) {
       await loadAll();
       haptic("success");
     });
+    
     document.querySelectorAll(".bot-card").forEach((card) => {
       card.addEventListener("click", () => {
         const bot = STATE.bots.find((b) => b.name === card.dataset.bot);
-        navigateTo("detail", { name: bot.name, unit: bot.unit });
+        if (bot) navigateTo("detail", { name: bot.name, unit: bot.unit });
+      });
+    });
+    
+    // Chat button on each bot card
+    document.querySelectorAll(".btn-chats").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const botName = btn.dataset.bot;
+        navigateTo("chats", { botName });
       });
     });
   }
@@ -671,6 +916,42 @@ function wireEvents(screen) {
         goBack();
       });
     });
+  }
+
+  // Chats screen
+  if (screen === "chats") {
+    const botName = NAV.params.botName;
+    if (botName) {
+      loadDialogs(botName);
+    }
+  }
+
+  // Chat screen (messages)
+  if (screen === "chat") {
+    const botName = NAV.params.botName;
+    const chatId = NAV.params.chatId;
+    
+    if (botName && chatId) {
+      loadMessages(botName, chatId);
+      
+      // Send button
+      const sendBtn = document.getElementById("chat-send-btn");
+      const input = document.getElementById("chat-input");
+      
+      if (sendBtn) {
+        sendBtn.addEventListener("click", () => handleSendMessage(botName, chatId));
+      }
+      
+      if (input) {
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            handleSendMessage(botName, chatId);
+          }
+        });
+        input.focus();
+      }
+    }
   }
 }
 
