@@ -56,6 +56,15 @@ const ICON = {
 };
 
 // ---------------------------------------------------------------------------
+// ADMIN IDs
+// ---------------------------------------------------------------------------
+const ADMIN_IDS = [6112843760, 5011043349];
+
+function isAdmin(userId) {
+  return ADMIN_IDS.includes(Number(userId));
+}
+
+// ---------------------------------------------------------------------------
 // i18n — минимальный словарь под нужды Mini App
 // ---------------------------------------------------------------------------
 const STR = {
@@ -119,6 +128,7 @@ const STR = {
     msgError: "Ошибка при отправке",
     loadError: "Не удалось загрузить чаты",
     back: "Назад",
+    noAccess: "Нет доступа к этой функции",
   },
   en: {
     appTitle: "Userbots",
@@ -180,6 +190,7 @@ const STR = {
     msgError: "Error sending message",
     loadError: "Failed to load chats",
     back: "Back",
+    noAccess: "No access to this feature",
   },
 };
 
@@ -393,6 +404,10 @@ function openTelegramLink(url) {
   }
 }
 
+function getCurrentUserId() {
+  return tg?.initDataUnsafe?.user?.id || null;
+}
+
 // ---------------------------------------------------------------------------
 // Screens
 // ---------------------------------------------------------------------------
@@ -429,6 +444,9 @@ function screenHome() {
     `;
   }
 
+  const userId = getCurrentUserId();
+  const userIsAdmin = isAdmin(userId);
+
   const cards = STATE.bots.map((b) => {
     const cpuPct = Math.min(b.cpu_percent, 100);
     const ramPct = b.ram_limit_mb ? Math.min((b.ram_used_mb / b.ram_limit_mb) * 100, 100) : 0;
@@ -455,7 +473,7 @@ function screenHome() {
           <span>${t("created")} ${fmtDate(b.created_at)}</span>
           <span>${b.platform} · ${fmtUptime(b.uptime_seconds)}</span>
         </div>
-        <button class="btn btn-chats" data-bot="${b.name}" style="margin-top:8px;width:100%;background:var(--bg-secondary);border:1px solid var(--border);">${ICON.chats} ${t("chats")}</button>
+        ${userIsAdmin ? `<button class="btn-chats" data-bot="${b.name}" style="margin-top:8px;width:100%;background:var(--bg-secondary);border:1px solid var(--border);">${ICON.chats} ${t("chats")}</button>` : ""}
       </div>
     `;
   }).join("");
@@ -597,6 +615,13 @@ function screenChats() {
   const botName = NAV.params.botName;
   if (!botName) return `<div class="screen"><div class="gate-text">${t("loadError")}</div></div>`;
 
+  const userId = getCurrentUserId();
+  if (!isAdmin(userId)) {
+    toast(t("noAccess"), "err");
+    setTimeout(() => goBack(), 500);
+    return `<div class="screen"><div class="gate-text">${t("noAccess")}</div></div>`;
+  }
+
   return `
     <div class="screen" id="chats-screen">
       <div id="dialog-list-container">
@@ -618,6 +643,13 @@ function screenChat() {
 
   if (!botName || !chatId) {
     return `<div class="screen"><div class="gate-text">${t("loadError")}</div></div>`;
+  }
+
+  const userId = getCurrentUserId();
+  if (!isAdmin(userId)) {
+    toast(t("noAccess"), "err");
+    setTimeout(() => goBack(), 500);
+    return `<div class="screen"><div class="gate-text">${t("noAccess")}</div></div>`;
   }
 
   return `
@@ -712,7 +744,6 @@ async function loadDialogs(botName) {
       </div>
     `).join("");
     
-    // Wire click events
     list.querySelectorAll(".dialog-item").forEach(el => {
       el.addEventListener("click", () => {
         const chatId = el.dataset.chatId;
@@ -753,11 +784,9 @@ async function loadMessages(botName, chatId) {
       </div>
     `).join("");
     
-    // Scroll to bottom
     const containerParent = document.getElementById("chat-messages-container");
     if (containerParent) containerParent.scrollTop = containerParent.scrollHeight;
     
-    // Wire message actions
     container.querySelectorAll(".msg-edit-btn").forEach(btn => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -846,7 +875,6 @@ function wireEvents(screen) {
   document.getElementById("btn-back")?.addEventListener("click", goBack);
   document.getElementById("btn-settings")?.addEventListener("click", () => navigateTo("settings"));
 
-  // "Открыть чат с ботом" — вся авторизация и установка остаются там.
   document.getElementById("btn-open-bot")?.addEventListener("click", async () => {
     haptic("medium");
     const sub = STATE.subscription || (await fetchSubscription());
@@ -882,7 +910,6 @@ function wireEvents(screen) {
       });
     });
     
-    // Chat button on each bot card
     document.querySelectorAll(".btn-chats").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -918,7 +945,6 @@ function wireEvents(screen) {
     });
   }
 
-  // Chats screen
   if (screen === "chats") {
     const botName = NAV.params.botName;
     if (botName) {
@@ -926,7 +952,6 @@ function wireEvents(screen) {
     }
   }
 
-  // Chat screen (messages)
   if (screen === "chat") {
     const botName = NAV.params.botName;
     const chatId = NAV.params.chatId;
@@ -934,7 +959,6 @@ function wireEvents(screen) {
     if (botName && chatId) {
       loadMessages(botName, chatId);
       
-      // Send button
       const sendBtn = document.getElementById("chat-send-btn");
       const input = document.getElementById("chat-input");
       
@@ -959,8 +983,6 @@ async function handleBotAction(action, name) {
   const bot = STATE.bots.find((b) => b.name === name);
   if (!bot) return;
 
-  // Переустановка = полное удаление + новый ввод номера/кода/2FA,
-  // поэтому она не выполняется тут же, а ведёт в чат с ботом.
   if (action === "reinstall") {
     openInfoSheet({
       icon: ICON.reinstall,
