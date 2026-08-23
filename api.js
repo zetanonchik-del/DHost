@@ -207,6 +207,136 @@ async function notifyInstallRequest() {
 }
 
 // ==========================================================================
+// НОВЫЕ ФУНКЦИИ ДЛЯ РАБОТЫ С ЧАТАМИ (ТОЛЬКО ДЛЯ АДМИНОВ)
+// Все запросы требуют bot_name — имя юзербота, от которого берётся сессия.
+// ==========================================================================
+
+// ==========================================================================
+// GET /api/getDialogs?bot_name=NAME
+// Ответ: [{ id, name, type, unread, last_msg, date, pinned, folder_id, is_archived, participants }]
+// ==========================================================================
+async function fetchDialogs(botName) {
+  if (!USE_MOCKS) {
+    const res = await fetch(
+      `${BASE_URL}/api/getDialogs?bot_name=${encodeURIComponent(botName)}`,
+      { headers: authHeaders() }
+    );
+    if (!res.ok) throw new Error("dialogs_fetch_failed");
+    return await res.json();
+  }
+  await _wait(500);
+  return []; // В мок-режиме возвращаем пустой массив
+}
+
+// ==========================================================================
+// GET /api/getMessages?bot_name=NAME&chat_id=123&limit=50&offset=0
+// Ответ: { messages: [{ id, text, date, sender_id, sender_name, is_me, reply_to, media, media_type, edited }], total }
+// ==========================================================================
+async function fetchMessages(botName, chatId, limit = 50, offset = 0) {
+  if (!USE_MOCKS) {
+    const res = await fetch(
+      `${BASE_URL}/api/getMessages?bot_name=${encodeURIComponent(botName)}&chat_id=${encodeURIComponent(chatId)}&limit=${limit}&offset=${offset}`,
+      { headers: authHeaders() }
+    );
+    if (!res.ok) throw new Error("messages_fetch_failed");
+    return await res.json();
+  }
+  await _wait(400);
+  return { messages: [], total: 0 };
+}
+
+// ==========================================================================
+// POST /api/sendMessage
+// Тело: { bot_name, chat_id, text, reply_to (опционально) }
+// Ответ: { success: true, id, date, text }
+// ==========================================================================
+async function sendMessage(botName, chatId, text, replyTo = null) {
+  if (!USE_MOCKS) {
+    const res = await fetch(`${BASE_URL}/api/sendMessage`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ bot_name: botName, chat_id: chatId, text, reply_to: replyTo }),
+    });
+    if (!res.ok) throw new Error("send_message_failed");
+    return await res.json();
+  }
+  await _wait(600);
+  return { success: true, id: Date.now(), date: Math.floor(Date.now() / 1000), text };
+}
+
+// ==========================================================================
+// POST /api/editMessage
+// Тело: { bot_name, chat_id, message_id, new_text }
+// Ответ: { success: true }
+// ==========================================================================
+async function editMessage(botName, chatId, messageId, newText) {
+  if (!USE_MOCKS) {
+    const res = await fetch(`${BASE_URL}/api/editMessage`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ bot_name: botName, chat_id: chatId, message_id: messageId, new_text: newText }),
+    });
+    if (!res.ok) throw new Error("edit_message_failed");
+    return await res.json();
+  }
+  await _wait(400);
+  return { success: true };
+}
+
+// ==========================================================================
+// POST /api/deleteMessage
+// Тело: { bot_name, chat_id, message_id }
+// Ответ: { success: true }
+// ==========================================================================
+async function deleteMessage(botName, chatId, messageId) {
+  if (!USE_MOCKS) {
+    const res = await fetch(`${BASE_URL}/api/deleteMessage`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ bot_name: botName, chat_id: chatId, message_id: messageId }),
+    });
+    if (!res.ok) throw new Error("delete_message_failed");
+    return await res.json();
+  }
+  await _wait(500);
+  return { success: true };
+}
+
+// ==========================================================================
+// GET /api/getFolders?bot_name=NAME
+// Ответ: [{ id, name, chat_ids }]
+// ==========================================================================
+async function fetchFolders(botName) {
+  if (!USE_MOCKS) {
+    const res = await fetch(
+      `${BASE_URL}/api/getFolders?bot_name=${encodeURIComponent(botName)}`,
+      { headers: authHeaders() }
+    );
+    if (!res.ok) throw new Error("folders_fetch_failed");
+    return await res.json();
+  }
+  await _wait(300);
+  return [];
+}
+
+// ==========================================================================
+// GET /api/getChatInfo?bot_name=NAME&chat_id=123
+// Ответ: { id, title, type, participants, about, photo }
+// ==========================================================================
+async function fetchChatInfo(botName, chatId) {
+  if (!USE_MOCKS) {
+    const res = await fetch(
+      `${BASE_URL}/api/getChatInfo?bot_name=${encodeURIComponent(botName)}&chat_id=${encodeURIComponent(chatId)}`,
+      { headers: authHeaders() }
+    );
+    if (!res.ok) throw new Error("chat_info_fetch_failed");
+    return await res.json();
+  }
+  await _wait(200);
+  return { id: chatId, title: "Unknown", type: "private", participants: 0 };
+}
+
+// ==========================================================================
 // Мок-данные — используются только пока USE_MOCKS = true.
 // Когда переключите на false, этот блок больше не читается — можно
 // оставить как есть или удалить, роли не играет.
@@ -221,7 +351,7 @@ let MOCK_BOTS = [
     cpu_percent: 12.4,
     ram_used_mb: 340,
     ram_limit_mb: 1024,
-    uptime_seconds: 267_300,
+    uptime_seconds: 267300,
     created_at: "2026-05-14",
     platform: "Hikka",
   },
@@ -242,4 +372,27 @@ let MOCK_SUBSCRIPTION = {
   max_slots: 3,
   used_slots: 2,
   expires_at: "2026-09-20T00:00:00Z",
+};
+
+// ==========================================================================
+// ЭКСПОРТ (если используется модульная система)
+// ==========================================================================
+export {
+  fetchBots,
+  fetchSubscription,
+  botAction,
+  reinstallBot,
+  deleteBot,
+  fetchLanguage,
+  setLanguage,
+  fetchAuthStatus,
+  notifyInstallRequest,
+  // Новые функции
+  fetchDialogs,
+  fetchMessages,
+  sendMessage,
+  editMessage,
+  deleteMessage,
+  fetchFolders,
+  fetchChatInfo,
 };
