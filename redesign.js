@@ -791,3 +791,31 @@ function render() {
   syncTelegramBackButton();
   wireEvents(screen);
 }
+
+/* --- ТИХОЕ АВТООБНОВЛЕНИЕ КАЖДЫЕ 3 СЕКУНДЫ --- */
+let autoRefreshBusy = false;
+setInterval(async () => {
+  if (autoRefreshBusy || STATE.loading || STATE.authorized === false) return;
+  const screen = typeof currentScreen === "function" ? currentScreen() : null;
+  
+  // Обновляем только на главном экране или в деталях бота
+  if (screen !== "home" && screen !== "detail") return;
+
+  autoRefreshBusy = true;
+  try {
+    const [bots, sub] = await Promise.all([
+      fetchBots(),
+      fetchSubscription().catch(() => STATE.subscription)
+    ]);
+    
+    if (Array.isArray(bots)) {
+      STATE.bots = bots;
+      if (sub) STATE.subscription = sub;
+      render();
+    }
+  } catch (e) {
+    console.warn("DHost silent 3s refresh error:", e);
+  } finally {
+    autoRefreshBusy = false;
+  }
+}, 3000);
