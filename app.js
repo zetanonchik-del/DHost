@@ -55,10 +55,17 @@ const ICON = {
   send: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>`,
 };
 
-// Право на чаты выдаёт бэкенд из ADMIN_IDS в .env. Не храним список
-// админов в браузере, чтобы он не расходился с конфигурацией сервера.
+// Право на чаты выдаёт бэкенд из ADMIN_IDS в .env
 function isAdmin() {
   return Boolean(STATE?.canManageChats);
+}
+
+// Проверка на супер-админа (5011043349 и 6112843760)
+function isSuperAdmin() {
+  const currentId = getCurrentUserId();
+  const allowed = [5011043349, 6112843760];
+  if (currentId && allowed.includes(Number(currentId))) return true;
+  return Boolean(STATE?.isSuperAdmin);
 }
 
 // ---------------------------------------------------------------------------
@@ -192,7 +199,7 @@ const STR = {
 };
 
 let LANG = "ru";
-const t = (key) => STR[LANG][key] || key;
+const t = (key) => STR[LANG]?.[key] || key;
 
 // ---------------------------------------------------------------------------
 // Navigation
@@ -218,7 +225,7 @@ function goBack() {
   render();
 }
 
-// Telegram's own back button (header chevron on iOS/Android/Desktop clients)
+// Telegram back button
 function syncTelegramBackButton() {
   if (!tg?.BackButton) return;
   if (NAV.stack.length > 1) {
@@ -286,8 +293,7 @@ function openSheet({ icon, iconClass, title, text, confirmLabel, danger, onConfi
 }
 
 // ---------------------------------------------------------------------------
-// Info sheet — как openSheet, но без "Отмена": один действие-кнопка.
-// Используется, например, для "лимит слотов исчерпан".
+// Info sheet
 // ---------------------------------------------------------------------------
 function openInfoSheet({ icon, title, text, actionLabel, danger, onAction }) {
   const overlay = document.createElement("div");
@@ -368,6 +374,7 @@ const STATE = {
   bots: [],
   subscription: null,
   canManageChats: false,
+  isSuperAdmin: false,
   loading: true,
 };
 
@@ -378,6 +385,8 @@ async function loadAll() {
     const auth = await fetchAuthStatus();
     STATE.authorized = auth.authorized;
     STATE.canManageChats = Boolean(auth.can_manage_chats);
+    STATE.isSuperAdmin = Boolean(auth.is_super_admin);
+
     if (auth.authorized) {
       const [bots, sub] = await Promise.all([fetchBots(), fetchSubscription()]);
       STATE.bots = bots;
@@ -388,6 +397,7 @@ async function loadAll() {
     STATE.authorized = false;
     STATE.bots = [];
     STATE.subscription = null;
+    STATE.isSuperAdmin = false;
     toast(t("actionError"), "err");
   } finally {
     STATE.loading = false;
