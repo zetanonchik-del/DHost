@@ -1,12 +1,44 @@
 /* ==========================================================================
-   UserBotHost UI Cyberpunk Redesign (i18n Ready)
-   - Поддержка переключения языков RU / EN
-   - Динамический подзаголовок в зависимости от количества юзерботов
-   - Радиальные круги метрик
-   - Экран деталей со спидометром и роботом-ракетой
+   UserBotHost UI Cyberpunk Redesign (Final Polish)
+   - Полная синхронизация языков RU/EN для ПК и телефонов
+   - Устранено наложение статуса "running" / "работает"
+   - Цветные неоновые рамки CPU (зелёная) и RAM (синяя) внутри экрана деталей
+   - Интерактивная неоновая волна при клике/касании (Touch Glow)
    ========================================================================== */
 
 const UI = { query: "", filter: "all" };
+
+// Гарантированная синхронизация языка при запуске
+try {
+  const savedLang = localStorage.getItem("mock_lang") || localStorage.getItem("dhost_lang");
+  if (savedLang && (savedLang === "ru" || savedLang === "en")) {
+    LANG = savedLang;
+  }
+} catch (_) {}
+
+// Расширяем глобальный словарь i18n
+if (typeof STR !== "undefined") {
+  Object.assign(STR.ru, {
+    subOne: "Твой юзербот — под контролем",
+    subMany: "Твои юзерботы — под контролем",
+    usedSlots: "использовано",
+    availSlots: "доступно",
+    startingStatus: "Запускаются",
+    errorStatus: "Ошибки",
+    runningStatus: "Работают",
+    management: "Управление",
+  });
+  Object.assign(STR.en, {
+    subOne: "Your userbot — under control",
+    subMany: "Your userbots — under control",
+    usedSlots: "used",
+    availSlots: "available",
+    startingStatus: "Starting",
+    errorStatus: "Errors",
+    runningStatus: "Running",
+    management: "Actions",
+  });
+}
 
 /* --- SVG ИКОНКИ И МАСКОТЫ --- */
 const ROBOT_AVATAR_SVG = `<svg viewBox="0 0 64 64" fill="none" class="bot-header-avatar">
@@ -60,13 +92,30 @@ const DETAIL_ROBOT_ROCKET_SVG = `<svg viewBox="0 0 100 100" class="gauge-center-
   <path d="M 43 58 Q 50 62 57 58" stroke="#818cf8" stroke-width="2" stroke-linecap="round" fill="none"/>
 </svg>`;
 
-/* --- ЕДИНАЯ ТАБЛИЦА СТИЛЕЙ КИБЕРПАНК-ДИЗАЙНА --- */
+/* --- СТИЛИ КИБЕРПАНКА И ЭФФЕКТОВ СВЕЧЕНИЯ --- */
 const FULL_REDESIGN_STYLE = `
 :root {
   --neon-blue: #3b82f6;
   --neon-cyan: #38bdf8;
   --neon-purple: #8b5cf6;
   --neon-green: #10b981;
+}
+
+/* Сенсорный неоновый отклик при тапе/клике */
+.click-glow-wave {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 999999;
+  transform: translate(-50%, -50%) scale(0.2);
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.45) 0%, rgba(99, 102, 241, 0.15) 50%, transparent 75%);
+  animation: rippleGlow 0.45s ease-out forwards;
+}
+@keyframes rippleGlow {
+  to {
+    transform: translate(-50%, -50%) scale(2.6);
+    opacity: 0;
+  }
 }
 
 /* Header */
@@ -127,7 +176,7 @@ const FULL_REDESIGN_STYLE = `
 .stat-dot.warn { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
 .stat-dot.err { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
 
-/* Bot Cards (Главная) */
+/* Bot Cards */
 .bot-card {
   position: relative; background: #0c1117;
   border-radius: 20px; padding: 15px; margin-bottom: 12px;
@@ -136,9 +185,9 @@ const FULL_REDESIGN_STYLE = `
   transition: all 0.2s ease; cursor: pointer; overflow: hidden;
 }
 .bot-card:active { transform: scale(0.985); }
-.bot-card.glow-green { border-color: rgba(16, 185, 129, 0.4); box-shadow: 0 0 16px rgba(16, 185, 129, 0.08); }
-.bot-card.glow-purple { border-color: rgba(139, 92, 246, 0.4); box-shadow: 0 0 16px rgba(139, 92, 246, 0.08); }
-.bot-card.glow-blue { border-color: rgba(59, 130, 246, 0.4); box-shadow: 0 0 16px rgba(59, 130, 246, 0.08); }
+.bot-card.glow-green { border-color: rgba(16, 185, 129, 0.35); box-shadow: 0 0 16px rgba(16, 185, 129, 0.08); }
+.bot-card.glow-purple { border-color: rgba(139, 92, 246, 0.35); box-shadow: 0 0 16px rgba(139, 92, 246, 0.08); }
+.bot-card.glow-blue { border-color: rgba(59, 130, 246, 0.35); box-shadow: 0 0 16px rgba(59, 130, 246, 0.08); }
 
 .bot-card-header { display: flex; align-items: center; gap: 12px; }
 .bot-avatar-circle {
@@ -154,11 +203,6 @@ const FULL_REDESIGN_STYLE = `
 
 .bot-info-title { flex: 1; min-width: 0; }
 .bot-name-text { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 2px; }
-.bot-status-tag {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 99px;
-  background: rgba(16, 185, 129, 0.12); color: #10b981;
-}
 
 .bot-metrics-row {
   display: flex; align-items: center; justify-content: space-between;
@@ -233,13 +277,33 @@ const FULL_REDESIGN_STYLE = `
   50% { transform: translateX(-50%) translateY(-5px); }
 }
 
+/* Цветные рамки CPU и RAM в экране деталей */
 .gauge-metrics-values {
-  display: flex; justify-content: space-between; margin-top: 14px; padding: 0 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
 }
-.metric-col { display: flex; flex-direction: column; }
-.metric-col.right { align-items: flex-end; }
-.metric-val-bold { font-size: 19px; font-weight: 800; font-family: var(--font-mono); color: #fff; }
-.metric-label-sub { font-size: 11px; color: var(--text-faint); font-weight: 600; margin-top: 2px; }
+.metric-pill-card {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  flex-direction: column;
+}
+.metric-pill-card.cpu-box {
+  border: 1px solid rgba(16, 185, 129, 0.38);
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.12), inset 0 0 10px rgba(16, 185, 129, 0.05);
+}
+.metric-pill-card.ram-box {
+  border: 1px solid rgba(6, 182, 212, 0.38);
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.12), inset 0 0 10px rgba(6, 182, 212, 0.05);
+  align-items: flex-end;
+}
+.metric-val-bold { font-size: 18px; font-weight: 800; font-family: var(--font-mono); color: #fff; }
+.metric-label-sub { font-size: 11px; color: var(--text-faint); font-weight: 600; margin-top: 3px; }
+.metric-pill-card.cpu-box .metric-label-sub { color: #34d399; }
+.metric-pill-card.ram-box .metric-label-sub { color: #67e8f9; }
 
 .detail-meta-row {
   display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
@@ -274,7 +338,7 @@ const FULL_REDESIGN_STYLE = `
 .act-btn-v2.pulse-active svg { animation: actPulse 0.4s ease-in-out; }
 @keyframes actPulse { 0% { transform: scale(1); } 50% { transform: scale(0.75); } 100% { transform: scale(1); } }
 
-.act-btn-v2.danger { color: #f87171; border-color: rgba(239, 68, 68, 0.2); }
+.act-btn-v2.danger { color: #f87171; border-color: rgba(239, 68, 68, 0.25); }
 .act-btn-v2.danger svg { color: #ef4444; }
 .act-btn-v2.danger.trash-active svg { animation: actTrashShake 0.45s ease-in-out; }
 @keyframes actTrashShake {
@@ -294,6 +358,28 @@ function injectRedesignStyle() {
     document.head.appendChild(s);
   }
   s.textContent = FULL_REDESIGN_STYLE;
+}
+
+/* Глобальный эффект вспышки свечения при касании/клике */
+function installTouchGlow() {
+  if (window.__DHOST_TOUCH_GLOW_INSTALLED) return;
+  window.__DHOST_TOUCH_GLOW_INSTALLED = true;
+
+  const spawnGlow = (x, y) => {
+    const wave = document.createElement("div");
+    wave.className = "click-glow-wave";
+    wave.style.width = "75px";
+    wave.style.height = "75px";
+    wave.style.left = `${x}px`;
+    wave.style.top = `${y}px`;
+    document.body.appendChild(wave);
+    setTimeout(() => wave.remove(), 450);
+  };
+
+  document.addEventListener("pointerdown", (e) => {
+    if (!e.clientX && !e.clientY) return;
+    spawnGlow(e.clientX, e.clientY);
+  }, { passive: true });
 }
 
 function renderRadial(percent, label, centerText, valueText, warnAt = 70, errAt = 90) {
@@ -327,13 +413,9 @@ function getArcOffset(percent, radius) {
   return arcLength * (1 - pct / 100);
 }
 
-/* Функция получения адаптивного подзаголовка с учётом языка и количества ботов */
 function getHeaderSubtitle() {
   const count = STATE?.bots?.length || 0;
-  if (typeof LANG !== "undefined" && LANG === "en") {
-    return count === 1 ? "Your userbot — under control" : "Your userbots — under control";
-  }
-  return count === 1 ? "Твой юзербот — под контролем" : "Твои юзерботы — под контролем";
+  return count === 1 ? t("subOne") : t("subMany");
 }
 
 /* --- РЕНДЕР HEADER --- */
@@ -392,7 +474,6 @@ function screenHome() {
   const pct = max ? Math.min((used / max) * 100, 100) : 0;
 
   const glowStyles = ["glow-green", "glow-purple", "glow-blue"];
-  const isEn = typeof LANG !== "undefined" && LANG === "en";
 
   const cards = STATE.bots.map((b, idx) => {
     const cpu = Math.max(0, Math.min(Number(b.cpu_percent) || 0, 100));
@@ -407,7 +488,7 @@ function screenHome() {
           <div class="bot-avatar-circle">${USER_AVATAR_SVG}</div>
           <div class="bot-info-title">
             <div class="bot-name-text">${b.name}</div>
-            <div class="bot-status-tag"><span class="stat-dot ok"></span> ${statusPill(b.status)}</div>
+            <div>${statusPill(b.status)}</div>
           </div>
           <div style="color:var(--text-faint)">›</div>
         </div>
@@ -438,27 +519,27 @@ function screenHome() {
         </div>
         <div class="summary-progress"><div style="width:${pct}%"></div></div>
         <div class="summary-foot">
-          <span>${used} ${isEn ? "used" : "использовано"}</span>
-          <span>${Math.max(max - used, 0)} ${isEn ? "available" : "доступно"}</span>
+          <span>${used} ${t("usedSlots")}</span>
+          <span>${Math.max(max - used, 0)} ${t("availSlots")}</span>
         </div>
         <div class="summary-stats">
           <div class="summary-stat">
             <div class="summary-stat-head"><span class="stat-dot ok"></span><div class="summary-stat-val">${running}</div></div>
-            <div class="summary-stat-txt">${isEn ? "Running" : "Работают"}</div>
+            <div class="summary-stat-txt">${t("runningStatus")}</div>
           </div>
           <div class="summary-stat">
             <div class="summary-stat-head"><span class="stat-dot warn"></span><div class="summary-stat-val">${installing}</div></div>
-            <div class="summary-stat-txt">${isEn ? "Starting" : "Запускаются"}</div>
+            <div class="summary-stat-txt">${t("startingStatus")}</div>
           </div>
           <div class="summary-stat">
             <div class="summary-stat-head"><span class="stat-dot err"></span><div class="summary-stat-val">${errors}</div></div>
-            <div class="summary-stat-txt">${isEn ? "Errors" : "Ошибки"}</div>
+            <div class="summary-stat-txt">${t("errorStatus")}</div>
           </div>
         </div>
       </div>
 
       <div class="bot-list">${cards}</div>
-      <button class="btn btn-primary" id="btn-open-bot" style="margin-top:4px">${ICON.plus}${t("installNew")}</button>
+      <button class="btn btn-primary" id="btn-open-bot" style="margin-top:4px">${ICON.plus} ${t("installNew")}</button>
     </div>
   `;
 }
@@ -489,9 +570,7 @@ function screenDetail() {
             <div class="detail-name-lg">${bot.name}</div>
             <div class="detail-unit-sub">${bot.unit || bot.platform || ""}</div>
           </div>
-          <div class="bot-status-tag">
-            <span class="stat-dot ok"></span> ${statusPill(bot.status)}
-          </div>
+          <div>${statusPill(bot.status)}</div>
         </div>
 
         <div class="gauge-wrapper">
@@ -511,12 +590,13 @@ function screenDetail() {
           ${DETAIL_ROBOT_ROCKET_SVG}
         </div>
 
+        <!-- Рамочки с неоновыми цветами для CPU и RAM -->
         <div class="gauge-metrics-values">
-          <div class="metric-col">
+          <div class="metric-pill-card cpu-box">
             <span class="metric-val-bold">${cpuPct.toFixed(1)}%</span>
             <span class="metric-label-sub">${t("cpu")}</span>
           </div>
-          <div class="metric-col right">
+          <div class="metric-pill-card ram-box">
             <span class="metric-val-bold">${Math.round(ramPct)}%</span>
             <span class="metric-label-sub">${t("ram")} · ${Math.round(ramUsed)}/${Math.round(ramLimit)}MB</span>
           </div>
@@ -534,7 +614,7 @@ function screenDetail() {
         </div>
       </div>
 
-      <div class="section-label" style="margin-top:16px;">${t("actions")}</div>
+      <div class="section-label" style="margin-top:16px;">${t("management")}</div>
       
       <div class="action-grid-v2">
         <div class="act-btn-v2" data-action="${isRunning ? "stop" : "start"}" data-anim="pulse">
@@ -605,6 +685,10 @@ function wireEvents(screen) {
         const lang = el.dataset.lang;
         if (lang === LANG) return;
         LANG = lang;
+        try {
+          localStorage.setItem("mock_lang", lang);
+          localStorage.setItem("dhost_lang", lang);
+        } catch (_) {}
         await setLanguage(lang);
         haptic("light");
         goBack();
@@ -643,6 +727,7 @@ async function refreshHome() {
 /* --- ГЛАВНЫЙ RENDER --- */
 function render() {
   injectRedesignStyle();
+  installTouchGlow();
   const app = document.getElementById("app");
   const screen = STATE.authorized === false ? "gate" : currentScreen();
   const body = {
