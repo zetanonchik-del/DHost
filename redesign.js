@@ -1,20 +1,27 @@
 /* ==========================================================================
-   UserBotHost UI Cyberpunk Redesign (Settings & Language Screen Upgrade)
-   - Полная мультиязычность (RU / EN) для всех экранов, заголовков и подписей
-   - Экран настроек: круговой циферблат слотов + 3D кнопки
-   - Экран выбора языка с анимированными оптоволоконными лучами и 3D флагами
-   - Интеграция с API, Telegram WebApp и тихим автообновлением
+   UserBotHost UI Cyberpunk Redesign (Fix: Layout, Single Flag, Full PC i18n)
+   - Расширенный круговой индикатор (свободно вмещает трехзначные числа)
+   - Одиночный флаг Великобритании (GB) для EN и России (RU) для RU
+   - Убраны строки Next unlock и Status
+   - Полная синхронизация переводов для Desktop / PC и мобильных устройств
    ========================================================================== */
 
 const UI = { query: "", filter: "all" };
 
-// Синхронизируем язык сразу при старте
-try {
-  const saved = localStorage.getItem("mock_lang") || localStorage.getItem("dhost_lang");
-  if (saved === "ru" || saved === "en") {
-    LANG = saved;
+// Синхронизация языка при запуске (включая Desktop / Браузер)
+function syncSavedLanguage() {
+  try {
+    const saved = localStorage.getItem("mock_lang") || localStorage.getItem("dhost_lang");
+    if (saved === "ru" || saved === "en") {
+      window.LANG = saved;
+    } else if (typeof LANG === "undefined") {
+      window.LANG = "ru";
+    }
+  } catch (_) {
+    window.LANG = "ru";
   }
-} catch (_) {}
+}
+syncSavedLanguage();
 
 // Полный словарь переводов для всех экранов
 if (typeof STR !== "undefined") {
@@ -50,14 +57,10 @@ if (typeof STR !== "undefined") {
     error: "ошибка",
     langSub: "Стандартный стек",
     supportSub: "Служба поддержки",
-    statusActive: "Активна",
     standardStack: "Стандартный стек",
     selectedStack: "Выбранный стек",
-    statusLabel: "Статус:",
-    nextUnlockAt: "Следующий уровень при",
     emptyTitle: "Пока нет юзерботов",
-    emptyText: "Установка начинается в чате с ботом — там бот проведёт вас через вход в аккаунт.",
-    currentLangDisplay: "Русский"
+    emptyText: "Установка начинается в чате с ботом — там бот проведёт вас через вход в аккаунт."
   });
 
   STR.en = Object.assign(STR.en || {}, {
@@ -92,14 +95,10 @@ if (typeof STR !== "undefined") {
     error: "error",
     langSub: "English stack",
     supportSub: "Contact Support",
-    statusActive: "Active",
     standardStack: "Standard Stack",
     selectedStack: "Selected Stack",
-    statusLabel: "Status:",
-    nextUnlockAt: "Next unlock at",
     emptyTitle: "No userbots yet",
-    emptyText: "Installation starts in the bot's chat, where it walks you through signing in.",
-    currentLangDisplay: "English (US)"
+    emptyText: "Installation starts in the bot's chat, where it walks you through signing in."
   });
 }
 
@@ -166,22 +165,30 @@ const ICON_SUPPORT_NEON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentC
   <circle cx="12" cy="12" r="1"></circle>
 </svg>`;
 
-const FLAG_US_GB_SVG = `<div class="flags-overlap">
-  <svg viewBox="0 0 32 32" class="flag-mini flag-us">
-    <rect width="32" height="32" rx="16" fill="#bd3d44"/>
-    <path d="M0 4.9h32M0 9.8h32M0 14.7h32M0 19.6h32M0 24.5h32M0 29.4h32" stroke="#fff" stroke-width="2.4"/>
-    <rect width="14" height="15" fill="#192f5d"/>
-  </svg>
-  <svg viewBox="0 0 32 32" class="flag-mini flag-gb">
-    <clipPath id="circleClip"><circle cx="16" cy="16" r="16"/></clipPath>
-    <g clip-path="url(#circleClip)">
+// Одиночные бейджи флагов для строки языка
+const BADGE_GB_SINGLE = `<div class="flag-badge-single">
+  <svg viewBox="0 0 32 32">
+    <clipPath id="circleClipGB"><circle cx="16" cy="16" r="15"/></clipPath>
+    <g clip-path="url(#circleClipGB)">
       <rect width="32" height="32" fill="#012169"/>
       <path d="M0 0 L32 32 M32 0 L0 32" stroke="#fff" stroke-width="5"/>
       <path d="M0 0 L32 32 M32 0 L0 32" stroke="#C8102E" stroke-width="2.5"/>
       <path d="M16 0 V32 M0 16 H32" stroke="#fff" stroke-width="7"/>
       <path d="M16 0 V32 M0 16 H32" stroke="#C8102E" stroke-width="4"/>
     </g>
-    <circle cx="16" cy="16" r="15.5" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+    <circle cx="16" cy="16" r="15" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
+  </svg>
+</div>`;
+
+const BADGE_RU_SINGLE = `<div class="flag-badge-single">
+  <svg viewBox="0 0 32 32">
+    <clipPath id="circleClipRU"><circle cx="16" cy="16" r="15"/></clipPath>
+    <g clip-path="url(#circleClipRU)">
+      <rect width="32" height="10.66" fill="#fff"/>
+      <rect y="10.66" width="32" height="10.68" fill="#0039A6"/>
+      <rect y="21.34" width="32" height="10.66" fill="#D52B1E"/>
+    </g>
+    <circle cx="16" cy="16" r="15" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
   </svg>
 </div>`;
 
@@ -309,7 +316,7 @@ const FULL_REDESIGN_STYLE = `
   color: #fff; border: none; box-shadow: 0 4px 14px rgba(99,102,241,0.35);
 }
 
-/* Главный summary box */
+/* Summary Box */
 .home-summary {
   background: linear-gradient(160deg, #111722, #0b0f15);
   border: 1px solid rgba(255,255,255,0.07);
@@ -482,29 +489,33 @@ const FULL_REDESIGN_STYLE = `
 .act-btn-v2:active { transform: scale(0.96); border-color: rgba(255, 255, 255, 0.2); }
 .act-btn-v2 svg { width: 22px; height: 22px; color: #94a3b8; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s; }
 
-/* Экран Настроек */
+/* ==========================================================================
+   ОБНОВЛЕННЫЙ ЭКРАН НАСТРОЕК
+   ========================================================================== */
 .sub-cyber-card {
   background: linear-gradient(145deg, #121820, #0c1015);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
-  padding: 16px;
+  padding: 16px 18px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   position: relative;
   overflow: hidden;
 }
 
+/* Увеличенный круговой индикатор (свободно вмещает 3-значные цифры) */
 .dial-wrapper {
   position: relative;
-  width: 82px;
-  height: 82px;
+  width: 96px;
+  height: 96px;
+  min-width: 96px;
   flex-shrink: 0;
 }
 .dial-svg {
-  width: 82px;
-  height: 82px;
+  width: 96px;
+  height: 96px;
   transform: rotate(-90deg);
 }
 .dial-bg {
@@ -528,27 +539,33 @@ const FULL_REDESIGN_STYLE = `
   align-items: center;
   justify-content: center;
   text-align: center;
+  padding: 0 4px;
 }
 .dial-val {
   font-family: var(--font-mono);
   font-weight: 800;
-  font-size: 14px;
+  font-size: 15px;
+  letter-spacing: -0.02em;
   color: #fff;
-  line-height: 1.1;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 .dial-sub {
-  font-size: 9.5px;
+  font-size: 10px;
   color: var(--text-faint);
   font-weight: 600;
-  margin-top: 1px;
+  margin-top: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
+/* Правая информационная колонка подписки */
 .sub-cyber-info {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 .sub-cyber-row {
   display: flex;
@@ -556,27 +573,22 @@ const FULL_REDESIGN_STYLE = `
   align-items: baseline;
 }
 .sub-cyber-lbl {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-faint);
   font-weight: 500;
 }
 .sub-cyber-val {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   color: #fff;
 }
-.sub-cyber-val span {
-  font-size: 10px;
-  color: var(--text-faint);
-  font-weight: normal;
-}
 .sub-cyber-track {
-  height: 4px;
+  height: 5px;
   border-radius: 99px;
   background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
-  margin: 2px 0;
+  margin: 3px 0;
 }
 .sub-cyber-progress {
   height: 100%;
@@ -585,26 +597,12 @@ const FULL_REDESIGN_STYLE = `
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
   transition: width 0.5s ease;
 }
-.status-active-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: #10b981;
-  font-size: 12px;
-  font-weight: 700;
-}
-.status-active-badge .dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 8px #10b981;
-}
 
+/* 3D Кнопки настроек */
 .cyber-list-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 9px;
   margin-top: 8px;
 }
 .cyber-btn-row {
@@ -666,23 +664,21 @@ const FULL_REDESIGN_STYLE = `
   margin-top: 2px;
 }
 
-.flags-overlap {
+/* Одиночный флаг-бейдж */
+.flag-badge-single {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  position: relative;
-  width: 44px;
+  justify-content: center;
+}
+.flag-badge-single svg {
+  width: 24px;
   height: 24px;
-}
-.flag-mini {
-  width: 22px;
-  height: 22px;
   border-radius: 50%;
-  position: absolute;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
-  border: 1.5px solid rgba(255,255,255,0.2);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
-.flag-us { left: 0; z-index: 1; }
-.flag-gb { left: 16px; z-index: 2; }
 .cyber-btn-chevron {
   color: var(--text-faint);
   font-size: 16px;
@@ -933,7 +929,6 @@ function renderHeader(screen) {
     `;
   }
   
-  // Актуализация заголовков для любого экрана
   const titles = {
     settings: t("settings"),
     language: t("language"),
@@ -1142,17 +1137,21 @@ function screenDetail() {
 }
 
 /* ==========================================================================
-   ЭКРАН НАСТРОЕК (ПО СКРИНШОТАМ 2 и 3)
+   ЭКРАН НАСТРОЕК (ПОЛНОСТЬЮ ОБНОВЛЕН)
    ========================================================================== */
 function screenSettings() {
+  syncSavedLanguage();
   const sub = STATE.subscription;
   const used = sub?.used_slots ?? STATE.bots.length;
   const max = sub?.max_slots ?? (used || 1);
   const pct = Math.min((used / max) * 100, 100);
 
-  const radius = 32;
+  // Радиус под 96px индикатор: 48px центр, 38px радиус (2 * PI * 38 ≈ 238.76)
+  const radius = 38;
   const circ = 2 * Math.PI * radius;
   const offset = circ - (pct / 100) * circ;
+
+  const currentFlagBadge = LANG === "ru" ? BADGE_RU_SINGLE : BADGE_GB_SINGLE;
 
   return `
     <div class="screen">
@@ -1160,15 +1159,15 @@ function screenSettings() {
       
       <div class="sub-cyber-card">
         <div class="dial-wrapper">
-          <svg class="dial-svg" viewBox="0 0 82 82">
+          <svg class="dial-svg" viewBox="0 0 96 96">
             <defs>
               <linearGradient id="dialGlowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stop-color="#38bdf8"/>
                 <stop offset="100%" stop-color="#818cf8"/>
               </linearGradient>
             </defs>
-            <circle class="dial-bg" cx="41" cy="41" r="${radius}" />
-            <circle class="dial-fill" cx="41" cy="41" r="${radius}" 
+            <circle class="dial-bg" cx="48" cy="48" r="${radius}" />
+            <circle class="dial-fill" cx="48" cy="48" r="${radius}" 
               stroke-dasharray="${circ}" stroke-dashoffset="${offset}" />
           </svg>
           <div class="dial-center-box">
@@ -1180,7 +1179,7 @@ function screenSettings() {
         <div class="sub-cyber-info">
           <div class="sub-cyber-row">
             <span class="sub-cyber-lbl">${t("slots")}:</span>
-            <span class="sub-cyber-val">${used} / ${max} <span>(${t("nextUnlockAt")} ${max})</span></span>
+            <span class="sub-cyber-val">${used} / ${max}</span>
           </div>
           
           <div class="sub-cyber-track">
@@ -1190,11 +1189,6 @@ function screenSettings() {
           <div class="sub-cyber-row" style="margin-top:2px;">
             <span class="sub-cyber-lbl">${t("expires")}:</span>
             <span class="sub-cyber-val">${sub?.expires_at ? fmtDate(sub.expires_at) : "—"}</span>
-          </div>
-
-          <div class="sub-cyber-row">
-            <span class="sub-cyber-lbl">${t("statusLabel")}</span>
-            <span class="status-active-badge"><span class="dot"></span>${t("statusActive")}</span>
           </div>
         </div>
       </div>
@@ -1210,9 +1204,7 @@ function screenSettings() {
             <div class="cyber-btn-title">${t("language")}</div>
             <div class="cyber-btn-sub">${t("langSub")}</div>
           </div>
-          <div class="flags-overlap">
-            ${FLAG_US_GB_SVG}
-          </div>
+          ${currentFlagBadge}
           <div class="cyber-btn-chevron">›</div>
         </div>
 
@@ -1232,9 +1224,10 @@ function screenSettings() {
 }
 
 /* ==========================================================================
-   ЭКРАН ВЫБОРА ЯЗЫКА (ПО СКРИНШОТУ 4)
+   ЭКРАН ВЫБОРА ЯЗЫКА
    ========================================================================== */
 function screenLanguage() {
+  syncSavedLanguage();
   const isRu = LANG === "ru";
   const isEn = LANG === "en";
 
@@ -1242,7 +1235,6 @@ function screenLanguage() {
     <div class="screen" style="padding-top: 0;">
       <div class="lang-screen-container">
         
-        <!-- Анимированный оптоволоконный фон -->
         <div class="fiber-rays-bg">
           <div class="fiber-sparkle" style="top:20%; left:25%; animation-delay:0.2s;"></div>
           <div class="fiber-sparkle" style="top:45%; left:75%; animation-delay:1.5s;"></div>
@@ -1267,7 +1259,6 @@ function screenLanguage() {
           </svg>
         </div>
 
-        <!-- Стеклянная карточка выбора языка -->
         <div class="lang-glass-card">
           <div class="lang-select-item ${isRu ? "active" : ""}" data-lang="ru">
             <div class="lang-flag-wrapper">
@@ -1340,15 +1331,20 @@ function wireEvents(screen) {
   if (screen === "language") {
     document.querySelectorAll("[data-lang]").forEach((el) => {
       el.addEventListener("click", async () => {
-        const lang = el.dataset.lang;
-        if (lang === LANG) return;
-        LANG = lang;
+        const selectedLang = el.dataset.lang;
+        if (selectedLang === LANG) return;
+        
+        window.LANG = selectedLang;
         try {
-          localStorage.setItem("mock_lang", lang);
-          localStorage.setItem("dhost_lang", lang);
+          localStorage.setItem("mock_lang", selectedLang);
+          localStorage.setItem("dhost_lang", selectedLang);
         } catch (_) {}
-        await setLanguage(lang);
-        haptic("light");
+        
+        if (typeof setLanguage === "function") {
+          await setLanguage(selectedLang);
+        }
+        
+        if (typeof haptic === "function") haptic("light");
         NAV.stack = ["home"];
         render();
       });
@@ -1357,7 +1353,7 @@ function wireEvents(screen) {
 }
 
 async function openInstallFlow() {
-  haptic("medium");
+  if (typeof haptic === "function") haptic("medium");
   const sub = STATE.subscription || (await fetchSubscription());
   STATE.subscription = sub;
   if (sub && sub.used_slots >= sub.max_slots) {
@@ -1380,10 +1376,11 @@ async function refreshHome() {
     btn.classList.add("spinning");
   }
   await loadAll();
-  haptic("success");
+  if (typeof haptic === "function") haptic("success");
 }
 
 function render() {
+  syncSavedLanguage();
   injectRedesignStyle();
   installTouchGlow();
   const app = document.getElementById("app");
