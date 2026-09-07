@@ -1,14 +1,14 @@
 /* ==========================================================================
-   UserBotHost UI Cyberpunk Redesign (Final Polish)
-   - Полная синхронизация языков RU/EN для ПК и телефонов
-   - Устранено наложение статуса "running" / "работает"
-   - Цветные неоновые рамки CPU (зелёная) и RAM (синяя) внутри экрана деталей
-   - Интерактивная неоновая волна при клике/касании (Touch Glow)
+   UserBotHost UI Cyberpunk Redesign (Mobile & Desktop Perfected)
+   - Исправлена двойная точка статуса
+   - Чёткие неоновые рамки CPU (зелёная) и RAM (голубая)
+   - Гарантированный неоновый всплеск на мобильных устройствах (touchstart/pointerdown)
+   - Полная мультиязычность
    ========================================================================== */
 
 const UI = { query: "", filter: "all" };
 
-// Гарантированная синхронизация языка при запуске
+// Синхронизация языка
 try {
   const savedLang = localStorage.getItem("mock_lang") || localStorage.getItem("dhost_lang");
   if (savedLang && (savedLang === "ru" || savedLang === "en")) {
@@ -16,7 +16,7 @@ try {
   }
 } catch (_) {}
 
-// Расширяем глобальный словарь i18n
+// Словарь i18n
 if (typeof STR !== "undefined") {
   Object.assign(STR.ru, {
     subOne: "Твой юзербот — под контролем",
@@ -92,7 +92,7 @@ const DETAIL_ROBOT_ROCKET_SVG = `<svg viewBox="0 0 100 100" class="gauge-center-
   <path d="M 43 58 Q 50 62 57 58" stroke="#818cf8" stroke-width="2" stroke-linecap="round" fill="none"/>
 </svg>`;
 
-/* --- СТИЛИ КИБЕРПАНКА И ЭФФЕКТОВ СВЕЧЕНИЯ --- */
+/* --- СТИЛИ ДИЗАЙНА --- */
 const FULL_REDESIGN_STYLE = `
 :root {
   --neon-blue: #3b82f6;
@@ -101,21 +101,61 @@ const FULL_REDESIGN_STYLE = `
   --neon-green: #10b981;
 }
 
-/* Сенсорный неоновый отклик при тапе/клике */
-.click-glow-wave {
-  position: fixed;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 999999;
-  transform: translate(-50%, -50%) scale(0.2);
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.45) 0%, rgba(99, 102, 241, 0.15) 50%, transparent 75%);
-  animation: rippleGlow 0.45s ease-out forwards;
+* {
+  -webkit-tap-highlight-color: transparent !important;
 }
-@keyframes rippleGlow {
-  to {
-    transform: translate(-50%, -50%) scale(2.6);
-    opacity: 0;
-  }
+
+/* Мобильный неоновый клик (Touch Wave) */
+.mobile-touch-glow {
+  position: fixed !important;
+  width: 60px !important;
+  height: 60px !important;
+  margin-left: -30px !important;
+  margin-top: -30px !important;
+  border-radius: 50% !important;
+  pointer-events: none !important;
+  z-index: 9999999 !important;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.7) 0%, rgba(99, 102, 241, 0.35) 45%, transparent 70%) !important;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.6) !important;
+  animation: tapExpand 0.4s ease-out forwards !important;
+}
+@keyframes tapExpand {
+  0% { transform: scale(0.2); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* ИСПРАВЛЕНИЕ: строго одна точка у статуса, убираем псевдоэлементы */
+.status-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 4px 10px !important;
+  border-radius: 99px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+}
+.status-dot {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  flex-shrink: 0 !important;
+  display: inline-block !important;
+}
+.status-dot::before,
+.status-dot::after {
+  display: none !important; /* Убирает второй круг */
+}
+.status-running .status-dot {
+  background: #10b981 !important;
+  box-shadow: 0 0 8px #10b981 !important;
+}
+.status-installing .status-dot {
+  background: #f59e0b !important;
+  box-shadow: 0 0 8px #f59e0b !important;
+}
+.status-error .status-dot {
+  background: #ef4444 !important;
+  box-shadow: 0 0 8px #ef4444 !important;
 }
 
 /* Header */
@@ -185,9 +225,9 @@ const FULL_REDESIGN_STYLE = `
   transition: all 0.2s ease; cursor: pointer; overflow: hidden;
 }
 .bot-card:active { transform: scale(0.985); }
-.bot-card.glow-green { border-color: rgba(16, 185, 129, 0.35); box-shadow: 0 0 16px rgba(16, 185, 129, 0.08); }
-.bot-card.glow-purple { border-color: rgba(139, 92, 246, 0.35); box-shadow: 0 0 16px rgba(139, 92, 246, 0.08); }
-.bot-card.glow-blue { border-color: rgba(59, 130, 246, 0.35); box-shadow: 0 0 16px rgba(59, 130, 246, 0.08); }
+.bot-card.glow-green { border-color: rgba(16, 185, 129, 0.4); box-shadow: 0 0 16px rgba(16, 185, 129, 0.08); }
+.bot-card.glow-purple { border-color: rgba(139, 92, 246, 0.4); box-shadow: 0 0 16px rgba(139, 92, 246, 0.08); }
+.bot-card.glow-blue { border-color: rgba(59, 130, 246, 0.4); box-shadow: 0 0 16px rgba(59, 130, 246, 0.08); }
 
 .bot-card-header { display: flex; align-items: center; gap: 12px; }
 .bot-avatar-circle {
@@ -202,7 +242,7 @@ const FULL_REDESIGN_STYLE = `
 .bot-avatar-circle svg { width: 22px; height: 22px; }
 
 .bot-info-title { flex: 1; min-width: 0; }
-.bot-name-text { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+.bot-name-text { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 3px; }
 
 .bot-metrics-row {
   display: flex; align-items: center; justify-content: space-between;
@@ -235,11 +275,13 @@ const FULL_REDESIGN_STYLE = `
 
 /* Экран деталей (screenDetail) */
 .detail-cyber-card {
-  background: linear-gradient(165deg, #121820 0%, #0a0e14 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px; padding: 18px;
-  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  position: relative; overflow: hidden;
+  background: linear-gradient(165deg, #121820 0%, #0a0e14 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 24px !important;
+  padding: 18px !important;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.5) !important;
+  position: relative !important;
+  overflow: hidden !important;
 }
 .detail-cyber-card::before {
   content: ''; position: absolute; top: -40px; left: 50%;
@@ -259,12 +301,12 @@ const FULL_REDESIGN_STYLE = `
 .gauge-track { fill: none; stroke: rgba(255, 255, 255, 0.06); stroke-linecap: round; }
 .gauge-arc-cpu {
   fill: none; stroke: #10b981; stroke-linecap: round;
-  filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.6));
+  filter: drop-shadow(0 0 7px rgba(16, 185, 129, 0.7));
   transition: stroke-dashoffset 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .gauge-arc-ram {
   fill: none; stroke: #06b6d4; stroke-linecap: round;
-  filter: drop-shadow(0 0 6px rgba(6, 182, 212, 0.6));
+  filter: drop-shadow(0 0 7px rgba(6, 182, 212, 0.7));
   transition: stroke-dashoffset 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -277,33 +319,33 @@ const FULL_REDESIGN_STYLE = `
   50% { transform: translateX(-50%) translateY(-5px); }
 }
 
-/* Цветные рамки CPU и RAM в экране деталей */
+/* ИСПРАВЛЕНИЕ: Яркие неоновые рамки для CPU и RAM на смартфонах */
 .gauge-metrics-values {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 16px;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+  margin-top: 16px !important;
 }
 .metric-pill-card {
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.02);
-  display: flex;
-  flex-direction: column;
+  padding: 11px 13px !important;
+  border-radius: 15px !important;
+  background: rgba(14, 20, 28, 0.7) !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 .metric-pill-card.cpu-box {
-  border: 1px solid rgba(16, 185, 129, 0.38);
-  box-shadow: 0 0 14px rgba(16, 185, 129, 0.12), inset 0 0 10px rgba(16, 185, 129, 0.05);
+  border: 1.5px solid #10b981 !important;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.25), inset 0 0 12px rgba(16, 185, 129, 0.1) !important;
 }
 .metric-pill-card.ram-box {
-  border: 1px solid rgba(6, 182, 212, 0.38);
-  box-shadow: 0 0 14px rgba(6, 182, 212, 0.12), inset 0 0 10px rgba(6, 182, 212, 0.05);
-  align-items: flex-end;
+  border: 1.5px solid #06b6d4 !important;
+  box-shadow: 0 0 16px rgba(6, 182, 212, 0.25), inset 0 0 12px rgba(6, 182, 212, 0.1) !important;
+  align-items: flex-end !important;
 }
-.metric-val-bold { font-size: 18px; font-weight: 800; font-family: var(--font-mono); color: #fff; }
-.metric-label-sub { font-size: 11px; color: var(--text-faint); font-weight: 600; margin-top: 3px; }
-.metric-pill-card.cpu-box .metric-label-sub { color: #34d399; }
-.metric-pill-card.ram-box .metric-label-sub { color: #67e8f9; }
+.metric-val-bold { font-size: 19px !important; font-weight: 800 !important; font-family: var(--font-mono) !important; color: #fff !important; }
+.metric-label-sub { font-size: 11px !important; font-weight: 700 !important; margin-top: 4px !important; text-transform: uppercase !important; }
+.metric-pill-card.cpu-box .metric-label-sub { color: #34d399 !important; }
+.metric-pill-card.ram-box .metric-label-sub { color: #67e8f9 !important; }
 
 .detail-meta-row {
   display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
@@ -331,7 +373,6 @@ const FULL_REDESIGN_STYLE = `
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s;
 }
 
-/* Анимации при клике */
 .act-btn-v2.spin-active svg { animation: actRotate 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
 @keyframes actRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
@@ -360,26 +401,32 @@ function injectRedesignStyle() {
   s.textContent = FULL_REDESIGN_STYLE;
 }
 
-/* Глобальный эффект вспышки свечения при касании/клике */
+/* Гарантированный неоновый клик на смартфонах и ПК */
 function installTouchGlow() {
   if (window.__DHOST_TOUCH_GLOW_INSTALLED) return;
   window.__DHOST_TOUCH_GLOW_INSTALLED = true;
 
-  const spawnGlow = (x, y) => {
+  const triggerGlow = (x, y) => {
+    if (!x || !y) return;
     const wave = document.createElement("div");
-    wave.className = "click-glow-wave";
-    wave.style.width = "75px";
-    wave.style.height = "75px";
+    wave.className = "mobile-touch-glow";
     wave.style.left = `${x}px`;
     wave.style.top = `${y}px`;
     document.body.appendChild(wave);
-    setTimeout(() => wave.remove(), 450);
+    setTimeout(() => wave.remove(), 420);
   };
 
-  document.addEventListener("pointerdown", (e) => {
-    if (!e.clientX && !e.clientY) return;
-    spawnGlow(e.clientX, e.clientY);
-  }, { passive: true });
+  window.addEventListener("touchstart", (e) => {
+    if (e.touches && e.touches[0]) {
+      triggerGlow(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: true, capture: true });
+
+  window.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse") {
+      triggerGlow(e.clientX, e.clientY);
+    }
+  }, { passive: true, capture: true });
 }
 
 function renderRadial(percent, label, centerText, valueText, warnAt = 70, errAt = 90) {
@@ -590,7 +637,7 @@ function screenDetail() {
           ${DETAIL_ROBOT_ROCKET_SVG}
         </div>
 
-        <!-- Рамочки с неоновыми цветами для CPU и RAM -->
+        <!-- ЯРКИЕ НЕОНОВЫЕ РАМОЧКИ CPU И RAM ДЛЯ ТЕЛЕФОНА -->
         <div class="gauge-metrics-values">
           <div class="metric-pill-card cpu-box">
             <span class="metric-val-bold">${cpuPct.toFixed(1)}%</span>
