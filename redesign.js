@@ -1,9 +1,9 @@
 /* ==========================================================================
-   UserBotHost UI Cyberpunk Redesign
-   - Custom Header с маскотом-роботом
-   - Радиальные круги метрик на главной (screenHome)
-   - Двойная неоновая дуга-спидометр с роботом-ракетой внутри (screenDetail)
-   - Интерактивные анимации кнопок управления (вращение, сжатие, дрожание корзины)
+   UserBotHost UI Cyberpunk Redesign (i18n Ready)
+   - Поддержка переключения языков RU / EN
+   - Динамический подзаголовок в зависимости от количества юзерботов
+   - Радиальные круги метрик
+   - Экран деталей со спидометром и роботом-ракетой
    ========================================================================== */
 
 const UI = { query: "", filter: "all" };
@@ -327,6 +327,15 @@ function getArcOffset(percent, radius) {
   return arcLength * (1 - pct / 100);
 }
 
+/* Функция получения адаптивного подзаголовка с учётом языка и количества ботов */
+function getHeaderSubtitle() {
+  const count = STATE?.bots?.length || 0;
+  if (typeof LANG !== "undefined" && LANG === "en") {
+    return count === 1 ? "Your userbot — under control" : "Your userbots — under control";
+  }
+  return count === 1 ? "Твой юзербот — под контролем" : "Твои юзерботы — под контролем";
+}
+
 /* --- РЕНДЕР HEADER --- */
 function renderHeader(screen) {
   if (screen === "home") {
@@ -336,13 +345,13 @@ function renderHeader(screen) {
           <div class="header-brand-avatar">${ROBOT_AVATAR_SVG}</div>
           <div class="header-brand-text">
             <div class="header-title-row">UserBot<span>Host</span></div>
-            <div class="header-subtitle">Твои юзерботы — под контролем</div>
+            <div class="header-subtitle">${getHeaderSubtitle()}</div>
           </div>
         </div>
         <div class="home-top-actions">
-          <button class="home-top-action" id="btn-settings" title="Настройки">${ICON.settings}</button>
-          <button class="home-top-action" id="btn-refresh-top" title="Обновить">${ICON.refresh}</button>
-          <button class="home-top-action primary" id="btn-open-top" title="Создать">${ICON.plus}</button>
+          <button class="home-top-action" id="btn-settings" title="${t("settings")}">${ICON.settings}</button>
+          <button class="home-top-action" id="btn-refresh-top" title="${t("refresh")}">${ICON.refresh}</button>
+          <button class="home-top-action primary" id="btn-open-top" title="${t("installNew")}">${ICON.plus}</button>
         </div>
       </div>
     `;
@@ -383,6 +392,7 @@ function screenHome() {
   const pct = max ? Math.min((used / max) * 100, 100) : 0;
 
   const glowStyles = ["glow-green", "glow-purple", "glow-blue"];
+  const isEn = typeof LANG !== "undefined" && LANG === "en";
 
   const cards = STATE.bots.map((b, idx) => {
     const cpu = Math.max(0, Math.min(Number(b.cpu_percent) || 0, 100));
@@ -397,14 +407,14 @@ function screenHome() {
           <div class="bot-avatar-circle">${USER_AVATAR_SVG}</div>
           <div class="bot-info-title">
             <div class="bot-name-text">${b.name}</div>
-            <div class="bot-status-tag"><span class="stat-dot ok"></span> ${b.status === "running" ? "Работает" : b.status}</div>
+            <div class="bot-status-tag"><span class="stat-dot ok"></span> ${statusPill(b.status)}</div>
           </div>
           <div style="color:var(--text-faint)">›</div>
         </div>
 
         <div class="bot-metrics-row">
-          ${renderRadial(cpu, "CPU", `${cpu.toFixed(0)}%`, `${cpu.toFixed(1)}%`)}
-          ${renderRadial(ram, "RAM", `${Math.round(ram)}%`, `${Math.round(ru)}/${Math.round(rl)}MB`)}
+          ${renderRadial(cpu, t("cpu"), `${cpu.toFixed(0)}%`, `${cpu.toFixed(1)}%`)}
+          ${renderRadial(ram, t("ram"), `${Math.round(ram)}%`, `${Math.round(ru)}/${Math.round(rl)}MB`)}
           <div class="bot-card-meta-foot">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
             <span>${fmtUptime(b.uptime_seconds)}</span>
@@ -420,35 +430,35 @@ function screenHome() {
         <div class="summary-top">
           <div>
             <div class="summary-count">${used} <span>/ ${max}</span></div>
-            <div class="summary-label">Слоты</div>
+            <div class="summary-label">${t("slots")}</div>
           </div>
           <div class="summary-expiry">
-            ${sub?.expires_at ? `Действует до: ${fmtDate(sub.expires_at)}` : ""}
+            ${sub?.expires_at ? `${t("expires")}: ${fmtDate(sub.expires_at)}` : ""}
           </div>
         </div>
         <div class="summary-progress"><div style="width:${pct}%"></div></div>
         <div class="summary-foot">
-          <span>${used} использовано</span>
-          <span>${Math.max(max - used, 0)} доступно</span>
+          <span>${used} ${isEn ? "used" : "использовано"}</span>
+          <span>${Math.max(max - used, 0)} ${isEn ? "available" : "доступно"}</span>
         </div>
         <div class="summary-stats">
           <div class="summary-stat">
             <div class="summary-stat-head"><span class="stat-dot ok"></span><div class="summary-stat-val">${running}</div></div>
-            <div class="summary-stat-txt">Работают</div>
+            <div class="summary-stat-txt">${isEn ? "Running" : "Работают"}</div>
           </div>
           <div class="summary-stat">
             <div class="summary-stat-head"><span class="stat-dot warn"></span><div class="summary-stat-val">${installing}</div></div>
-            <div class="summary-stat-txt">Запускаются</div>
+            <div class="summary-stat-txt">${isEn ? "Starting" : "Запускаются"}</div>
           </div>
           <div class="summary-stat">
             <div class="summary-stat-head"><span class="stat-dot err"></span><div class="summary-stat-val">${errors}</div></div>
-            <div class="summary-stat-txt">Ошибки</div>
+            <div class="summary-stat-txt">${isEn ? "Errors" : "Ошибки"}</div>
           </div>
         </div>
       </div>
 
       <div class="bot-list">${cards}</div>
-      <button class="btn btn-primary" id="btn-open-bot" style="margin-top:4px">${ICON.plus} Установить юзербота</button>
+      <button class="btn btn-primary" id="btn-open-bot" style="margin-top:4px">${ICON.plus}${t("installNew")}</button>
     </div>
   `;
 }
@@ -480,7 +490,7 @@ function screenDetail() {
             <div class="detail-unit-sub">${bot.unit || bot.platform || ""}</div>
           </div>
           <div class="bot-status-tag">
-            <span class="stat-dot ok"></span> ${isRunning ? "running" : bot.status}
+            <span class="stat-dot ok"></span> ${statusPill(bot.status)}
           </div>
         </div>
 
@@ -504,44 +514,44 @@ function screenDetail() {
         <div class="gauge-metrics-values">
           <div class="metric-col">
             <span class="metric-val-bold">${cpuPct.toFixed(1)}%</span>
-            <span class="metric-label-sub">CPU</span>
+            <span class="metric-label-sub">${t("cpu")}</span>
           </div>
           <div class="metric-col right">
             <span class="metric-val-bold">${Math.round(ramPct)}%</span>
-            <span class="metric-label-sub">RAM · ${Math.round(ramUsed)}/${Math.round(ramLimit)}MB</span>
+            <span class="metric-label-sub">${t("ram")} · ${Math.round(ramUsed)}/${Math.round(ramLimit)}MB</span>
           </div>
         </div>
 
         <div class="detail-meta-row">
           <div class="detail-meta-cell">
-            <span class="meta-lbl">создан</span>
+            <span class="meta-lbl">${t("created")}</span>
             <span class="meta-val">${fmtDate(bot.created_at)}</span>
           </div>
           <div class="detail-meta-cell">
-            <span class="meta-lbl">аптайм</span>
+            <span class="meta-lbl">${t("uptime")}</span>
             <span class="meta-val">${fmtUptime(bot.uptime_seconds)}</span>
           </div>
         </div>
       </div>
 
-      <div class="section-label" style="margin-top:16px;">Управление</div>
+      <div class="section-label" style="margin-top:16px;">${t("actions")}</div>
       
       <div class="action-grid-v2">
         <div class="act-btn-v2" data-action="${isRunning ? "stop" : "start"}" data-anim="pulse">
           ${isRunning ? ICON.stop : ICON.play}
-          <span>${isRunning ? "Остановить" : "Запустить"}</span>
+          <span>${isRunning ? t("stop") : t("start")}</span>
         </div>
         <div class="act-btn-v2" data-action="restart" data-anim="spin">
           ${ICON.restart}
-          <span>Перезапуск</span>
+          <span>${t("restart")}</span>
         </div>
         <div class="act-btn-v2" data-action="reinstall" data-anim="spin">
           ${ICON.reinstall}
-          <span>Переустановить</span>
+          <span>${t("reinstall")}</span>
         </div>
         <div class="act-btn-v2 danger" data-action="delete" data-anim="trash">
           ${ICON.trash}
-          <span>Удалить</span>
+          <span>${t("delete")}</span>
         </div>
       </div>
     </div>
