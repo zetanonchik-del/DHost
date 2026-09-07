@@ -1,5 +1,5 @@
 /* ==========================================================================
-   UserBotHost UI Cyberpunk Redesign + Super-Admin Panel
+   UserBotHost UI Cyberpunk Redesign + Enhanced Super-Admin Panel
    ========================================================================== */
 
 const UI = { query: "", filter: "all" };
@@ -64,7 +64,6 @@ if (typeof STR !== "undefined") {
     admRamIncrease: "Увеличение RAM",
     admDeleteByNick: "Удалить по нику",
     admRestartAll: "Перезапустить сервисы",
-    admRebootServer: "Перезагрузка сервера",
     admEnterUserId: "Введите Telegram ID пользователя:",
     admEnterDays: "Количество дней (например 30):",
     admEnterNick: "Введите никнейм юзербота:",
@@ -72,8 +71,8 @@ if (typeof STR !== "undefined") {
     admAllBotsOrOne: "Оставьте ник пустым, чтобы изменить для ВСЕХ",
     admDone: "Успешно выполнено",
     admFail: "Ошибка выполнения команды",
-    admConfirmReboot: "Вы уверены, что хотите перезагрузить весь сервер?",
-    admConfirmRestartAll: "Перезапустить все сервисы юзерботов?"
+    admConfirmRestartAll: "Перезапустить все сервисы юзерботов?",
+    liveBadge: "ЖИВОЙ ПОТОК (3с)"
   });
 
   STR.en = Object.assign(STR.en || {}, {
@@ -121,7 +120,6 @@ if (typeof STR !== "undefined") {
     admRamIncrease: "Increase RAM",
     admDeleteByNick: "Delete by Nickname",
     admRestartAll: "Restart Services",
-    admRebootServer: "Reboot Server",
     admEnterUserId: "Enter user Telegram ID:",
     admEnterDays: "Days of access (e.g. 30):",
     admEnterNick: "Enter userbot nickname:",
@@ -129,8 +127,8 @@ if (typeof STR !== "undefined") {
     admAllBotsOrOne: "Leave nickname empty to apply to ALL",
     admDone: "Action completed successfully",
     admFail: "Action execution failed",
-    admConfirmReboot: "Are you sure you want to reboot the server?",
-    admConfirmRestartAll: "Restart all userbot system services?"
+    admConfirmRestartAll: "Restart all userbot system services?",
+    liveBadge: "LIVE STREAM (3s)"
   });
 }
 
@@ -276,6 +274,25 @@ const FULL_REDESIGN_STYLE = `
 }
 
 * { -webkit-tap-highlight-color: transparent !important; }
+
+/* НЕОНОВЫЙ ТАП */
+.mobile-touch-glow {
+  position: fixed !important;
+  width: 60px !important;
+  height: 60px !important;
+  margin-left: -30px !important;
+  margin-top: -30px !important;
+  border-radius: 50% !important;
+  pointer-events: none !important;
+  z-index: 99999999 !important;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.8) 0%, rgba(99, 102, 241, 0.45) 45%, transparent 70%) !important;
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.7) !important;
+  animation: tapExpandAnim 0.45s ease-out forwards !important;
+}
+@keyframes tapExpandAnim {
+  0% { transform: scale(0.2); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
 
 .status-pill {
   display: inline-flex !important;
@@ -434,7 +451,7 @@ const FULL_REDESIGN_STYLE = `
   display: flex; align-items: center; justify-content: center; padding: 16px;
 }
 .cyber-modal-box {
-  width: 100%; max-width: 380px; background: #0e141d;
+  width: 100%; max-width: 400px; background: #0e141d;
   border: 1.5px solid rgba(56, 189, 248, 0.4);
   border-radius: 20px; padding: 20px;
   box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 25px rgba(56, 189, 248, 0.15);
@@ -451,6 +468,49 @@ const FULL_REDESIGN_STYLE = `
 }
 .cyber-modal-input:focus { border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
 .cyber-modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+
+/* КРАСИВЫЕ КАРТОЧКИ ХАРАКТЕРИСТИК СЕРВЕРА */
+.stats-modal-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px;
+}
+.stats-cell {
+  background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px;
+}
+.stats-cell-label { font-size: 10px; color: var(--text-faint); font-weight: 600; text-transform: uppercase; }
+.stats-cell-value { font-family: var(--font-mono); font-size: 15px; font-weight: 800; color: #fff; }
+.stats-cell-sub { font-size: 9.5px; color: #38bdf8; font-family: var(--font-mono); }
+.live-indicator {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 9px;
+  color: #10b981; font-weight: 700; font-family: var(--font-mono);
+  background: rgba(16, 185, 129, 0.12); padding: 3px 8px; border-radius: 99px;
+  margin-top: 4px;
+}
+.live-dot { width: 5px; height: 5px; border-radius: 50%; background: #10b981; box-shadow: 0 0 6px #10b981; }
+
+/* СПИСОК ВСЕХ ЮЗЕРБОТОВ ПОЛЬЗОВАТЕЛЕЙ */
+.admin-bots-container {
+  max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-top: 12px;
+}
+.user-group-card {
+  background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px; padding: 10px 12px;
+}
+.user-group-head {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;
+}
+.user-group-uid { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: #fff; }
+.user-group-badge { font-size: 10px; color: var(--text-faint); font-family: var(--font-mono); }
+.user-bots-pill-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.user-bot-pill {
+  display: inline-flex; align-items: center; gap: 6px; background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.28); color: #e2e8f0; font-size: 11px;
+  padding: 3px 8px; border-radius: 8px; font-family: var(--font-mono);
+}
+.bot-pill-status { width: 6px; height: 6px; border-radius: 50%; }
+.bot-pill-status.running { background: #10b981; box-shadow: 0 0 5px #10b981; }
+.bot-pill-status.stopped { background: #94a3b8; }
+.bot-pill-status.error { background: #ef4444; }
 
 /* КАРТОЧКИ БОТОВ */
 .bot-card {
@@ -684,6 +744,7 @@ function injectRedesignStyle() {
   s.textContent = FULL_REDESIGN_STYLE;
 }
 
+// Полноценный неоновый тап с поддержкой Touch и Pointer событий
 function installTouchGlow() {
   if (window.__DHOST_TOUCH_GLOW_INSTALLED) return;
   window.__DHOST_TOUCH_GLOW_INSTALLED = true;
@@ -692,13 +753,22 @@ function installTouchGlow() {
     if (!x || !y) return;
     const wave = document.createElement("div");
     wave.className = "mobile-touch-glow";
-    wave.style.cssText = `position:fixed;width:50px;height:50px;margin-left:-25px;margin-top:-25px;border-radius:50%;pointer-events:none;z-index:999999;background:radial-gradient(circle,rgba(56,189,248,0.7) 0%,rgba(99,102,241,0.3) 45%,transparent 70%);animation:tapExpand 0.4s ease-out forwards;left:${x}px;top:${y}px;`;
+    wave.style.left = `${x}px`;
+    wave.style.top = `${y}px`;
     document.body.appendChild(wave);
-    setTimeout(() => wave.remove(), 420);
+    setTimeout(() => wave.remove(), 440);
   };
 
   window.addEventListener("touchstart", (e) => {
-    if (e.touches && e.touches[0]) triggerGlow(e.touches[0].clientX, e.touches[0].clientY);
+    if (e.touches && e.touches[0]) {
+      triggerGlow(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: true, capture: true });
+
+  window.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse") {
+      triggerGlow(e.clientX, e.clientY);
+    }
   }, { passive: true, capture: true });
 }
 
@@ -932,6 +1002,124 @@ function openCyberPrompt({ title, desc, fields, confirmLabel = t("confirm"), onC
   });
 }
 
+// Центрированное окно характеристик сервера с автообновлением каждые 3 секунды (без MSK)
+function openLiveServerStatsModal() {
+  const overlay = document.createElement("div");
+  overlay.className = "cyber-modal-overlay";
+
+  overlay.innerHTML = `
+    <div class="cyber-modal-box" style="text-align:center;">
+      <div class="cyber-modal-title">${t("admServerStats")}</div>
+      <div class="live-indicator"><span class="live-dot"></span>${t("liveBadge")}</div>
+      
+      <div class="stats-modal-grid" id="stats-render-area">
+        <div class="stats-cell"><span class="stats-cell-label">CPU</span><span class="stats-cell-value">--</span><span class="stats-cell-sub">--</span></div>
+        <div class="stats-cell"><span class="stats-cell-label">RAM</span><span class="stats-cell-value">--</span><span class="stats-cell-sub">--</span></div>
+        <div class="stats-cell"><span class="stats-cell-label">DISK</span><span class="stats-cell-value">--</span><span class="stats-cell-sub">--</span></div>
+        <div class="stats-cell"><span class="stats-cell-label">UPTIME</span><span class="stats-cell-value">--</span><span class="stats-cell-sub">Online</span></div>
+      </div>
+
+      <div class="cyber-modal-actions" style="margin-top:16px;">
+        <button class="btn btn-primary" id="stats-modal-close" style="width:100%;">OK</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  let timerId = null;
+
+  const update = async () => {
+    try {
+      const st = await window.DHostAPI.fetchServerStats();
+      const area = document.getElementById("stats-render-area");
+      if (!area) return;
+      area.innerHTML = `
+        <div class="stats-cell">
+          <span class="stats-cell-label">CPU</span>
+          <span class="stats-cell-value">${st.cpu_percent}%</span>
+          <span class="stats-cell-sub">${st.cores} CORES</span>
+        </div>
+        <div class="stats-cell">
+          <span class="stats-cell-label">RAM</span>
+          <span class="stats-cell-value">${st.ram_percent}%</span>
+          <span class="stats-cell-sub">${st.ram_used_mb} / ${st.ram_total_mb} MB</span>
+        </div>
+        <div class="stats-cell">
+          <span class="stats-cell-label">DISK</span>
+          <span class="stats-cell-value">${st.disk_percent}%</span>
+          <span class="stats-cell-sub">${st.disk_used_gb} / ${st.disk_total_gb} GB</span>
+        </div>
+        <div class="stats-cell">
+          <span class="stats-cell-label">UPTIME</span>
+          <span class="stats-cell-value">${st.uptime}</span>
+          <span class="stats-cell-sub">System Active</span>
+        </div>
+      `;
+    } catch (_) {}
+  };
+
+  update();
+  timerId = setInterval(update, 3000);
+
+  const close = () => {
+    if (timerId) clearInterval(timerId);
+    overlay.remove();
+  };
+
+  overlay.querySelector("#stats-modal-close").addEventListener("click", close);
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) close();
+  });
+}
+
+// Красивое центрированное модальное окно со списком всех юзерботов, сгруппированных по ID
+function openAllBotsModal(bots) {
+  const overlay = document.createElement("div");
+  overlay.className = "cyber-modal-overlay";
+
+  const grouped = {};
+  bots.forEach(b => {
+    if (!grouped[b.uid]) grouped[b.uid] = [];
+    grouped[b.uid].push(b);
+  });
+
+  const cardsHtml = Object.entries(grouped).map(([uid, uBots]) => `
+    <div class="user-group-card">
+      <div class="user-group-head">
+        <span class="user-group-uid">UID: ${uid}</span>
+        <span class="user-group-badge">${uBots.length} ${t("userbot").toLowerCase()}</span>
+      </div>
+      <div class="user-bots-pill-row">
+        ${uBots.map(b => `
+          <div class="user-bot-pill">
+            <span class="bot-pill-status ${b.status}"></span>
+            <span>${b.name}</span>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+
+  overlay.innerHTML = `
+    <div class="cyber-modal-box">
+      <div class="cyber-modal-title" style="text-align:center;">${t("admAllBots")} (${bots.length})</div>
+      <div class="admin-bots-container">
+        ${cardsHtml || `<div style="text-align:center;color:var(--text-faint);padding:20px 0;">Empty</div>`}
+      </div>
+      <div class="cyber-modal-actions" style="margin-top:16px;">
+        <button class="btn btn-primary" id="allbots-modal-close" style="width:100%;">OK</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const close = () => overlay.remove();
+  overlay.querySelector("#allbots-modal-close").addEventListener("click", close);
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) close();
+  });
+}
+
 function screenAdmin() {
   if (!isSuperAdmin()) {
     return `<div class="screen"><div class="gate-text">${t("noAccess")}</div></div>`;
@@ -972,14 +1160,9 @@ function screenAdmin() {
           <div class="adm-card-name">${t("admDeleteByNick")}</div>
         </div>
 
-        <div class="adm-card-btn" id="adm-btn-restart-all">
+        <div class="adm-card-btn" id="adm-btn-restart-all" style="grid-column: span 2;">
           <div class="adm-card-icon">${ICON.restart}</div>
           <div class="adm-card-name">${t("admRestartAll")}</div>
-        </div>
-
-        <div class="adm-card-btn danger" id="adm-btn-reboot">
-          <div class="adm-card-icon">${ICON.alertCircle}</div>
-          <div class="adm-card-name">${t("admRebootServer")}</div>
         </div>
       </div>
     </div>
@@ -1253,32 +1436,16 @@ function wireEvents(screen) {
       });
     });
 
-    document.getElementById("adm-btn-stats")?.addEventListener("click", async () => {
-      try {
-        const st = await window.DHostAPI.fetchServerStats();
-        openInfoSheet({
-          icon: ICON.server,
-          title: t("admServerStats"),
-          text: `CPU: ${st.cpu_percent}% (${st.cores} cores)<br>RAM: ${st.ram_percent}% (${st.ram_used_mb}/${st.ram_total_mb} MB)<br>Disk: ${st.disk_percent}% (${st.disk_used_gb}/${st.disk_total_gb} GB)<br>Uptime: ${st.uptime}<br>MSK: ${st.time_msk}`,
-          actionLabel: "OK",
-          danger: false
-        });
-      } catch (e) {
-        toast(t("admFail"), "err");
-      }
+    document.getElementById("adm-btn-stats")?.addEventListener("click", () => {
+      haptic("light");
+      openLiveServerStatsModal();
     });
 
     document.getElementById("adm-btn-allbots")?.addEventListener("click", async () => {
       try {
+        haptic("light");
         const all = await window.DHostAPI.fetchAdminAllBots();
-        const listStr = all.map(b => `• <b>${b.name}</b> (UID: ${b.uid}) — ${b.status}`).join("<br>") || "Empty";
-        openInfoSheet({
-          icon: ICON.chats,
-          title: t("admAllBots"),
-          text: `<div style="max-height:240px;overflow-y:auto;text-align:left;font-size:12px">${listStr}</div>`,
-          actionLabel: "OK",
-          danger: false
-        });
+        openAllBotsModal(all);
       } catch (e) {
         toast(t("admFail"), "err");
       }
@@ -1333,27 +1500,18 @@ function wireEvents(screen) {
         }
       });
     });
-
-    document.getElementById("adm-btn-reboot")?.addEventListener("click", () => {
-      openSheet({
-        icon: ICON.alertCircle,
-        title: t("admRebootServer"),
-        text: t("admConfirmReboot"),
-        confirmLabel: t("confirm"),
-        danger: true,
-        onConfirm: async () => {
-          await window.DHostAPI.adminRebootServer();
-          toast(t("admDone"), "ok");
-        }
-      });
-    });
   }
 
+  // Кнопки управления юзерботом (Остановить, Перезапуск, Переустановить, Удалить)
   if (screen === "detail") {
-    document.querySelectorAll(".act-btn-v2").forEach((btn) => {
-      btn.addEventListener("click", () => {
+    document.querySelectorAll(".act-btn-v2[data-action]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const action = btn.dataset.action;
+        const botName = NAV.params.name;
         if (typeof handleBotAction === "function") {
-          handleBotAction(btn.dataset.action, NAV.params.name);
+          handleBotAction(action, botName);
         }
       });
     });
@@ -1361,7 +1519,9 @@ function wireEvents(screen) {
 
   if (screen === "settings") {
     document.getElementById("row-language")?.addEventListener("click", () => navigateTo("language"));
-    document.getElementById("row-support")?.addEventListener("click", () => openTelegramLink("https://t.me/userbothostchat"));
+    document.getElementById("row-support")?.addEventListener("click", () => {
+      openTelegramLink("https://t.me/userbothostchat");
+    });
   }
 
   if (screen === "language") {
