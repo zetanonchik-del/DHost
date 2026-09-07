@@ -1,10 +1,9 @@
 /* ==========================================================================
-   UserBotHost UI Cyberpunk Redesign (Fix: Back Button & Instant Language Apply)
+   UserBotHost UI Cyberpunk Redesign + Super-Admin Panel
    ========================================================================== */
 
 const UI = { query: "", filter: "all" };
 
-// Синхронизация сохраненного языка
 function syncSavedLanguage() {
   try {
     const saved = localStorage.getItem("mock_lang") || localStorage.getItem("dhost_lang");
@@ -19,7 +18,6 @@ function syncSavedLanguage() {
 }
 syncSavedLanguage();
 
-// Словарь переводов
 if (typeof STR !== "undefined") {
   STR.ru = Object.assign(STR.ru || {}, {
     appTitle: "Юзерботы",
@@ -56,7 +54,26 @@ if (typeof STR !== "undefined") {
     standardStack: "Стандартный стек",
     selectedStack: "Выбранный стек",
     emptyTitle: "Пока нет юзерботов",
-    emptyText: "Установка начинается в чате с ботом — там бот проведёт вас через вход в аккаунт."
+    emptyText: "Установка начинается в чате с ботом.",
+    adminPanel: "Панель администратора",
+    adminPanelSub: "Эксклюзивный доступ root",
+    admWhitelistAdd: "Добавить в вайтлист",
+    admWhitelistDel: "Удалить из вайтлиста",
+    admServerStats: "Характеристики сервера",
+    admAllBots: "Все юзерботы",
+    admRamIncrease: "Увеличение RAM",
+    admDeleteByNick: "Удалить по нику",
+    admRestartAll: "Перезапустить сервисы",
+    admRebootServer: "Перезагрузка сервера",
+    admEnterUserId: "Введите Telegram ID пользователя:",
+    admEnterDays: "Количество дней (например 30):",
+    admEnterNick: "Введите никнейм юзербота:",
+    admEnterMb: "Количество RAM в MB (например 512):",
+    admAllBotsOrOne: "Оставьте ник пустым, чтобы изменить для ВСЕХ",
+    admDone: "Успешно выполнено",
+    admFail: "Ошибка выполнения команды",
+    admConfirmReboot: "Вы уверены, что хотите перезагрузить весь сервер?",
+    admConfirmRestartAll: "Перезапустить все сервисы юзерботов?"
   });
 
   STR.en = Object.assign(STR.en || {}, {
@@ -94,11 +111,36 @@ if (typeof STR !== "undefined") {
     standardStack: "Standard Stack",
     selectedStack: "Selected Stack",
     emptyTitle: "No userbots yet",
-    emptyText: "Installation starts in the bot's chat, where it walks you through signing in."
+    emptyText: "Installation starts in the bot's chat.",
+    adminPanel: "Admin Panel",
+    adminPanelSub: "Exclusive Root Access",
+    admWhitelistAdd: "Add to Whitelist",
+    admWhitelistDel: "Remove from Whitelist",
+    admServerStats: "Server Metrics",
+    admAllBots: "All Userbots",
+    admRamIncrease: "Increase RAM",
+    admDeleteByNick: "Delete by Nickname",
+    admRestartAll: "Restart Services",
+    admRebootServer: "Reboot Server",
+    admEnterUserId: "Enter user Telegram ID:",
+    admEnterDays: "Days of access (e.g. 30):",
+    admEnterNick: "Enter userbot nickname:",
+    admEnterMb: "RAM in MB (e.g. 512):",
+    admAllBotsOrOne: "Leave nickname empty to apply to ALL",
+    admDone: "Action completed successfully",
+    admFail: "Action execution failed",
+    admConfirmReboot: "Are you sure you want to reboot the server?",
+    admConfirmRestartAll: "Restart all userbot system services?"
   });
 }
 
-/* --- SVG ИКОНКИ --- */
+function isSuperAdmin() {
+  const currentId = getCurrentUserId();
+  const allowed = [5011043349, 6112843760];
+  if (currentId && allowed.includes(Number(currentId))) return true;
+  return Boolean(STATE?.isSuperAdmin);
+}
+
 const ROBOT_AVATAR_SVG = `<svg viewBox="0 0 64 64" fill="none" class="bot-header-avatar">
   <defs>
     <linearGradient id="glowB" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -161,7 +203,6 @@ const ICON_SUPPORT_NEON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentC
   <circle cx="12" cy="12" r="1"></circle>
 </svg>`;
 
-// Флаг Великобритании (Английский)
 const BADGE_GB_SINGLE = `<div class="flag-badge-single">
   <svg viewBox="0 0 32 32">
     <clipPath id="circleClipGB"><circle cx="16" cy="16" r="15"/></clipPath>
@@ -176,7 +217,6 @@ const BADGE_GB_SINGLE = `<div class="flag-badge-single">
   </svg>
 </div>`;
 
-// Флаг России (Русский)
 const BADGE_RU_SINGLE = `<div class="flag-badge-single">
   <svg viewBox="0 0 32 32">
     <clipPath id="circleClipRU"><circle cx="16" cy="16" r="15"/></clipPath>
@@ -198,11 +238,8 @@ const FLAG_GB_ROUND_3D = `<svg viewBox="0 0 48 48" class="flag-3d-round">
       <stop offset="100%" stop-color="#1e293b"/>
     </radialGradient>
     <clipPath id="gbInnerCircle"><circle cx="24" cy="24" r="18"/></clipPath>
-    <filter id="rimGlow">
-      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000" flood-opacity="0.6"/>
-    </filter>
   </defs>
-  <circle cx="24" cy="24" r="22" fill="url(#metallicRim)" filter="url(#rimGlow)"/>
+  <circle cx="24" cy="24" r="22" fill="url(#metallicRim)"/>
   <circle cx="24" cy="24" r="19" fill="#0b1329"/>
   <g clip-path="url(#gbInnerCircle)">
     <rect width="48" height="48" fill="#012169"/>
@@ -211,7 +248,6 @@ const FLAG_GB_ROUND_3D = `<svg viewBox="0 0 48 48" class="flag-3d-round">
     <path d="M24 0 V48 M0 24 H48" stroke="#fff" stroke-width="10"/>
     <path d="M24 0 V48 M0 24 H48" stroke="#C8102E" stroke-width="5.5"/>
   </g>
-  <circle cx="24" cy="24" r="18" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
 </svg>`;
 
 const FLAG_RU_SQUARE_3D = `<svg viewBox="0 0 48 48" class="flag-3d-square">
@@ -221,18 +257,14 @@ const FLAG_RU_SQUARE_3D = `<svg viewBox="0 0 48 48" class="flag-3d-square">
       <stop offset="50%" stop-color="#b45309"/>
       <stop offset="100%" stop-color="#78350f"/>
     </linearGradient>
-    <filter id="leatherShadow">
-      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000" flood-opacity="0.7"/>
-    </filter>
   </defs>
-  <rect x="4" y="4" width="40" height="40" rx="10" fill="url(#ruGoldBorder)" filter="url(#leatherShadow)"/>
+  <rect x="4" y="4" width="40" height="40" rx="10" fill="url(#ruGoldBorder)"/>
   <rect x="6" y="6" width="36" height="36" rx="8" fill="#18181b"/>
   <g>
     <rect x="7" y="7" width="34" height="11.3" rx="4" fill="#ffffff"/>
     <rect x="7" y="18.3" width="34" height="11.3" fill="#0039A6"/>
     <rect x="7" y="29.6" width="34" height="11.3" rx="4" fill="#D52B1E"/>
   </g>
-  <rect x="6" y="6" width="36" height="36" rx="8" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1.2" stroke-dasharray="2,2"/>
 </svg>`;
 
 const FULL_REDESIGN_STYLE = `
@@ -243,27 +275,7 @@ const FULL_REDESIGN_STYLE = `
   --neon-green: #10b981;
 }
 
-* {
-  -webkit-tap-highlight-color: transparent !important;
-}
-
-.mobile-touch-glow {
-  position: fixed !important;
-  width: 60px !important;
-  height: 60px !important;
-  margin-left: -30px !important;
-  margin-top: -30px !important;
-  border-radius: 50% !important;
-  pointer-events: none !important;
-  z-index: 9999999 !important;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.7) 0%, rgba(99, 102, 241, 0.35) 45%, transparent 70%) !important;
-  box-shadow: 0 0 20px rgba(56, 189, 248, 0.6) !important;
-  animation: tapExpand 0.4s ease-out forwards !important;
-}
-@keyframes tapExpand {
-  0% { transform: scale(0.2); opacity: 1; }
-  100% { transform: scale(2.2); opacity: 0; }
-}
+* { -webkit-tap-highlight-color: transparent !important; }
 
 .status-pill {
   display: inline-flex !important;
@@ -278,15 +290,12 @@ const FULL_REDESIGN_STYLE = `
   width: 6px !important;
   height: 6px !important;
   border-radius: 50% !important;
-  flex-shrink: 0 !important;
   display: inline-block !important;
 }
-.status-dot::before, .status-dot::after { display: none !important; }
 .status-running .status-dot { background: #10b981 !important; box-shadow: 0 0 8px #10b981 !important; }
 .status-installing .status-dot { background: #f59e0b !important; box-shadow: 0 0 8px #f59e0b !important; }
 .status-error .status-dot { background: #ef4444 !important; box-shadow: 0 0 8px #ef4444 !important; }
 
-/* Topbar Header */
 .topbar-home {
   padding: calc(var(--safe-top) + 12px) 16px 14px;
   background: transparent !important;
@@ -313,7 +322,6 @@ const FULL_REDESIGN_STYLE = `
   color: #fff; border: none; box-shadow: 0 4px 14px rgba(99,102,241,0.35);
 }
 
-/* Summary Box */
 .home-summary {
   background: linear-gradient(160deg, #111722, #0b0f15);
   border: 1px solid rgba(255,255,255,0.07);
@@ -338,12 +346,113 @@ const FULL_REDESIGN_STYLE = `
 .summary-stat-head { display: flex; align-items: center; gap: 8px; }
 .summary-stat-val { font: 700 15px var(--font-mono); color: #fff; }
 .summary-stat-txt { font-size: 10px; color: var(--text-faint); }
-.stat-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; position: relative; }
+.stat-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
 .stat-dot.ok { background: #10b981; box-shadow: 0 0 8px #10b981; }
 .stat-dot.warn { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
 .stat-dot.err { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
 
-/* Bot Cards */
+/* КНОПКА ПАНЕЛИ АДМИНИСТРАТОРА СТРОГО ПОД СЛОТАМИ */
+.admin-banner-btn {
+  width: 100%;
+  margin: 0 0 14px 0;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.16) 0%, rgba(99, 102, 241, 0.16) 100%);
+  border: 1.5px solid rgba(239, 68, 68, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.18);
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-sizing: border-box;
+}
+.admin-banner-btn:active {
+  transform: scale(0.98);
+  border-color: rgba(239, 68, 68, 0.8);
+  box-shadow: 0 0 22px rgba(239, 68, 68, 0.4);
+}
+.admin-banner-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(239, 68, 68, 0.25);
+  color: #f87171;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.admin-banner-icon svg { width: 20px; height: 20px; }
+.admin-banner-content { flex: 1; text-align: left; }
+.admin-banner-title { font-size: 14.5px; font-weight: 800; color: #fff; line-height: 1.2; }
+.admin-banner-sub { font-size: 10.5px; color: rgba(255, 255, 255, 0.55); margin-top: 2px; }
+.admin-banner-arrow { color: #f87171; font-size: 18px; font-weight: bold; }
+
+/* КАРТОЧКИ В АДМИН-ПАНЕЛИ */
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+.adm-card-btn {
+  background: linear-gradient(145deg, #131922, #0d1218);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 15px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #fff;
+  transition: all 0.15s ease;
+}
+.adm-card-btn:active { transform: scale(0.96); border-color: #38bdf8; }
+.adm-card-btn.danger { border-color: rgba(239, 68, 68, 0.3); }
+.adm-card-btn.danger:active { border-color: #ef4444; }
+.adm-card-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: rgba(56, 189, 248, 0.1);
+  color: #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.adm-card-btn.danger .adm-card-icon { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.adm-card-icon svg { width: 20px; height: 20px; }
+.adm-card-name { font-size: 12px; font-weight: 650; }
+
+/* КАСТОМНЫЕ МОДАЛЬНЫЕ ОКНА ВВОДА */
+.cyber-modal-overlay {
+  position: fixed; inset: 0; background: rgba(5, 8, 12, 0.75);
+  backdrop-filter: blur(8px); z-index: 99999;
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+}
+.cyber-modal-box {
+  width: 100%; max-width: 380px; background: #0e141d;
+  border: 1.5px solid rgba(56, 189, 248, 0.4);
+  border-radius: 20px; padding: 20px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 25px rgba(56, 189, 248, 0.15);
+  animation: modalPop 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes modalPop { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.cyber-modal-title { font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+.cyber-modal-desc { font-size: 12px; color: var(--text-faint); margin-bottom: 14px; }
+.cyber-modal-input {
+  width: 100%; height: 42px; background: #151d28;
+  border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;
+  padding: 0 12px; color: #fff; font-family: var(--font-mono);
+  font-size: 14px; outline: none; margin-bottom: 10px; box-sizing: border-box;
+}
+.cyber-modal-input:focus { border-color: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
+.cyber-modal-actions { display: flex; gap: 8px; margin-top: 14px; }
+
+/* КАРТОЧКИ БОТОВ */
 .bot-card {
   position: relative; background: #0c1117;
   border-radius: 20px; padding: 15px; margin-bottom: 12px;
@@ -396,7 +505,7 @@ const FULL_REDESIGN_STYLE = `
 }
 .bot-card-meta-foot svg { width: 14px; height: 14px; }
 
-/* Detail Screen */
+/* DETAIL SCREEN */
 .detail-cyber-card {
   background: linear-gradient(165deg, #121820 0%, #0a0e14 100%) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -405,12 +514,6 @@ const FULL_REDESIGN_STYLE = `
   box-shadow: 0 14px 35px rgba(0, 0, 0, 0.5) !important;
   position: relative !important;
   overflow: hidden !important;
-}
-.detail-cyber-card::before {
-  content: ''; position: absolute; top: -40px; left: 50%;
-  transform: translateX(-50%); width: 140px; height: 140px;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, transparent 70%);
-  pointer-events: none;
 }
 .detail-head-flex { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
 .detail-name-lg { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: #fff; }
@@ -481,361 +584,94 @@ const FULL_REDESIGN_STYLE = `
   cursor: pointer; color: #fff; font-size: 13px; font-weight: 600;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   transition: transform 0.15s ease, border-color 0.15s ease;
-  position: relative; overflow: hidden;
 }
 .act-btn-v2:active { transform: scale(0.96); border-color: rgba(255, 255, 255, 0.2); }
-.act-btn-v2 svg { width: 22px; height: 22px; color: #94a3b8; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s; }
+.act-btn-v2 svg { width: 22px; height: 22px; color: #94a3b8; }
 
-/* Экран Настроек */
+/* SETTINGS SCREEN */
 .sub-cyber-card {
   background: linear-gradient(145deg, #121820, #0c1015);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
-  padding: 16px 18px;
-  display: flex;
-  align-items: center;
-  gap: 18px;
+  border-radius: 20px; padding: 16px 18px;
+  display: flex; align-items: center; gap: 18px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-  position: relative;
-  overflow: hidden;
 }
-
-.dial-wrapper {
-  position: relative;
-  width: 96px;
-  height: 96px;
-  min-width: 96px;
-  flex-shrink: 0;
-}
-.dial-svg {
-  width: 96px;
-  height: 96px;
-  transform: rotate(-90deg);
-}
-.dial-bg {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.06);
-  stroke-width: 5;
-}
+.dial-wrapper { position: relative; width: 96px; height: 96px; min-width: 96px; flex-shrink: 0; }
+.dial-svg { width: 96px; height: 96px; transform: rotate(-90deg); }
+.dial-bg { fill: none; stroke: rgba(255, 255, 255, 0.06); stroke-width: 5; }
 .dial-fill {
-  fill: none;
-  stroke: url(#dialGlowGrad);
-  stroke-width: 5.5;
-  stroke-linecap: round;
+  fill: none; stroke: #38bdf8; stroke-width: 5.5; stroke-linecap: round;
   filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.7));
   transition: stroke-dashoffset 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .dial-center-box {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 0 4px;
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
 }
-.dial-val {
-  font-family: var(--font-mono);
-  font-weight: 800;
-  font-size: 15px;
-  letter-spacing: -0.02em;
-  color: #fff;
-  line-height: 1.15;
-  white-space: nowrap;
-}
-.dial-sub {
-  font-size: 10px;
-  color: var(--text-faint);
-  font-weight: 600;
-  margin-top: 3px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
+.dial-val { font-family: var(--font-mono); font-weight: 800; font-size: 15px; color: #fff; }
+.dial-sub { font-size: 10px; color: var(--text-faint); font-weight: 600; margin-top: 3px; text-transform: uppercase; }
 
-.sub-cyber-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.sub-cyber-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-}
-.sub-cyber-lbl {
-  font-size: 13px;
-  color: var(--text-faint);
-  font-weight: 500;
-}
-.sub-cyber-val {
-  font-family: var(--font-mono);
-  font-size: 14px;
-  font-weight: 700;
-  color: #fff;
-}
-.sub-cyber-track {
-  height: 5px;
-  border-radius: 99px;
-  background: rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-  margin: 3px 0;
-}
-.sub-cyber-progress {
-  height: 100%;
-  border-radius: 99px;
-  background: linear-gradient(90deg, #38bdf8, #818cf8);
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
-  transition: width 0.5s ease;
-}
+.sub-cyber-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.sub-cyber-row { display: flex; justify-content: space-between; align-items: baseline; }
+.sub-cyber-lbl { font-size: 13px; color: var(--text-faint); font-weight: 500; }
+.sub-cyber-val { font-family: var(--font-mono); font-size: 14px; font-weight: 700; color: #fff; }
+.sub-cyber-track { height: 5px; border-radius: 99px; background: rgba(255, 255, 255, 0.08); overflow: hidden; margin: 3px 0; }
+.sub-cyber-progress { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #38bdf8, #818cf8); transition: width 0.5s ease; }
 
-.cyber-list-card {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  margin-top: 8px;
-}
+.cyber-list-card { display: flex; flex-direction: column; gap: 9px; margin-top: 8px; }
 .cyber-btn-row {
   background: linear-gradient(160deg, #111722, #0b0f15);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 18px;
-  padding: 13px 15px;
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+  border-radius: 18px; padding: 13px 15px; display: flex; align-items: center; gap: 13px;
+  cursor: pointer; transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.cyber-btn-row:active {
-  transform: scale(0.985);
-  border-color: rgba(56, 189, 248, 0.3);
-}
+.cyber-btn-row:active { transform: scale(0.985); border-color: rgba(56, 189, 248, 0.3); }
 .cyber-btn-icon-box {
-  width: 44px;
-  height: 44px;
-  border-radius: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  position: relative;
+  width: 44px; height: 44px; border-radius: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .cyber-btn-icon-box.globe {
-  background: radial-gradient(circle at 30% 30%, rgba(56, 189, 248, 0.2), rgba(139, 92, 246, 0.1));
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  color: #38bdf8;
-  box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.2), rgba(139, 92, 246, 0.1));
+  border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8;
 }
 .cyber-btn-icon-box.support {
-  background: radial-gradient(circle at 30% 30%, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.1));
-  border: 1px solid rgba(16, 185, 129, 0.35);
-  color: #34d399;
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.1));
+  border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399;
 }
-.cyber-btn-icon-box svg {
-  width: 24px;
-  height: 24px;
-}
-.cyber-btn-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-.cyber-btn-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #fff;
-}
-.cyber-btn-sub {
-  font-size: 11px;
-  color: var(--text-faint);
-  margin-top: 2px;
-}
+.cyber-btn-icon-box svg { width: 24px; height: 24px; }
+.cyber-btn-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cyber-btn-title { font-size: 15px; font-weight: 700; color: #fff; }
+.cyber-btn-sub { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
 
-.flag-badge-single {
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.flag-badge-single svg {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-}
-.cyber-btn-chevron {
-  color: var(--text-faint);
-  font-size: 16px;
-  margin-left: 6px;
-}
+.flag-badge-single { width: 24px; height: 24px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.flag-badge-single svg { width: 24px; height: 24px; border-radius: 50%; }
+.cyber-btn-chevron { color: var(--text-faint); font-size: 16px; margin-left: 6px; }
 
-/* Экран Выбора Языка */
-.lang-screen-container {
-  position: relative;
-  min-height: calc(100vh - 120px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 0;
-  overflow: visible !important;
-}
-
-.fiber-rays-bg {
-  position: absolute;
-  inset: -20px 0;
-  pointer-events: none !important;
-  user-select: none !important;
-  z-index: 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-}
-.fiber-svg {
-  width: 100%;
-  height: 100%;
-  max-width: 480px;
-  pointer-events: none !important;
-  filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.4));
-}
-.fiber-path {
-  fill: none;
-  stroke-linecap: round;
-  opacity: 0.75;
-  pointer-events: none !important;
-  animation: cyberFlow 4s ease-in-out infinite alternate;
-}
-@keyframes cyberFlow {
-  0% { stroke-dashoffset: 0; opacity: 0.4; }
-  50% { opacity: 0.85; stroke: #38bdf8; }
-  100% { stroke-dashoffset: 80; opacity: 0.5; }
-}
-
-.fiber-sparkle {
-  position: absolute;
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: #38bdf8;
-  box-shadow: 0 0 6px #38bdf8;
-  pointer-events: none !important;
-  animation: floatDust 5s ease-in-out infinite;
-}
-@keyframes floatDust {
-  0%, 100% { transform: translateY(0) scale(0.6); opacity: 0.2; }
-  50% { transform: translateY(-30px) scale(1.3); opacity: 0.9; }
-}
-
+/* LANGUAGE SCREEN */
+.lang-screen-container { position: relative; min-height: calc(100vh - 120px); display: flex; align-items: center; justify-content: center; padding: 10px 0; }
 .lang-glass-card {
-  position: relative;
-  z-index: 100 !important;
-  width: 100%;
-  max-width: 440px;
-  background: rgba(13, 19, 28, 0.65);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 28px;
-  padding: 16px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 0 25px rgba(56, 189, 248, 0.05);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  position: relative; z-index: 100; width: 100%; max-width: 440px;
+  background: rgba(13, 19, 28, 0.65); backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 28px; padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
 }
-
 .lang-select-item {
-  position: relative;
-  z-index: 101 !important;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 18px;
-  border-radius: 20px;
-  background: rgba(18, 24, 34, 0.65);
-  border: 1.5px solid rgba(255, 255, 255, 0.08);
-  cursor: pointer !important;
-  pointer-events: auto !important;
-  touch-action: manipulation;
-  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  display: flex; align-items: center; gap: 16px; padding: 14px 18px; border-radius: 20px;
+  background: rgba(18, 24, 34, 0.65); border: 1.5px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer; transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.lang-select-item:active {
-  transform: scale(0.97);
-}
+.lang-select-item:active { transform: scale(0.97); }
 .lang-select-item.active {
-  background: rgba(14, 30, 45, 0.8);
-  border-color: #38bdf8;
-  box-shadow: 0 0 25px rgba(56, 189, 248, 0.35), inset 0 0 15px rgba(56, 189, 248, 0.12);
+  background: rgba(14, 30, 45, 0.8); border-color: #38bdf8;
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.35);
 }
-
-.lang-flag-wrapper {
-  width: 48px;
-  height: 48px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none !important;
-  animation: flagFloat 4s ease-in-out infinite alternate;
-}
-@keyframes flagFloat {
-  0% { transform: translateY(0px) rotate(0deg); }
-  100% { transform: translateY(-2.5px) rotate(1deg); }
-}
-.flag-3d-round, .flag-3d-square {
-  width: 100%;
-  height: 100%;
-  pointer-events: none !important;
-  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
-}
-
-.lang-item-content {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  pointer-events: none !important;
-}
-.lang-item-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: -0.01em;
-}
-.lang-item-title span {
-  color: #94a3b8;
-  margin-right: 6px;
-  font-weight: 800;
-}
-.lang-item-sub {
-  font-size: 12px;
-  color: var(--text-faint);
-  margin-top: 2px;
-}
-.lang-select-item.active .lang-item-sub {
-  color: #67e8f9;
-}
-
-.lang-check-icon {
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #38bdf8;
-  pointer-events: none !important;
-  filter: drop-shadow(0 0 8px #38bdf8);
-}
-.lang-check-icon svg {
-  width: 20px;
-  height: 20px;
-}
+.lang-flag-wrapper { width: 48px; height: 48px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.flag-3d-round, .flag-3d-square { width: 100%; height: 100%; }
+.lang-item-content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.lang-item-title { font-size: 16px; font-weight: 700; color: #fff; }
+.lang-item-title span { color: #94a3b8; margin-right: 6px; font-weight: 800; }
+.lang-item-sub { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+.lang-select-item.active .lang-item-sub { color: #67e8f9; }
+.lang-check-icon { width: 22px; height: 22px; color: #38bdf8; }
 `;
 
 function injectRedesignStyle() {
@@ -856,22 +692,13 @@ function installTouchGlow() {
     if (!x || !y) return;
     const wave = document.createElement("div");
     wave.className = "mobile-touch-glow";
-    wave.style.left = `${x}px`;
-    wave.style.top = `${y}px`;
+    wave.style.cssText = `position:fixed;width:50px;height:50px;margin-left:-25px;margin-top:-25px;border-radius:50%;pointer-events:none;z-index:999999;background:radial-gradient(circle,rgba(56,189,248,0.7) 0%,rgba(99,102,241,0.3) 45%,transparent 70%);animation:tapExpand 0.4s ease-out forwards;left:${x}px;top:${y}px;`;
     document.body.appendChild(wave);
     setTimeout(() => wave.remove(), 420);
   };
 
   window.addEventListener("touchstart", (e) => {
-    if (e.touches && e.touches[0]) {
-      triggerGlow(e.touches[0].clientX, e.touches[0].clientY);
-    }
-  }, { passive: true, capture: true });
-
-  window.addEventListener("pointerdown", (e) => {
-    if (e.pointerType === "mouse") {
-      triggerGlow(e.clientX, e.clientY);
-    }
+    if (e.touches && e.touches[0]) triggerGlow(e.touches[0].clientX, e.touches[0].clientY);
   }, { passive: true, capture: true });
 }
 
@@ -936,10 +763,13 @@ function renderHeader(screen) {
     language: t("language"),
     detail: t("userbot"),
     home: t("appTitle"),
-    gate: t("appTitle")
+    gate: t("appTitle"),
+    admin: t("adminPanel"),
+    chats: t("chats"),
+    chat: NAV.params.chatName || "Chat"
   };
   
-  const currentTitle = titles[screen] || (HEADER_META[screen]?.title ? HEADER_META[screen].title() : "UserBotHost");
+  const currentTitle = titles[screen] || "UserBotHost";
   const currentSub = screen === "detail" ? (NAV.params.name || "") : "";
   const showBack = NAV.stack.length > 1;
 
@@ -1007,6 +837,18 @@ function screenHome() {
     `;
   }).join("");
 
+  const showAdminBanner = isSuperAdmin();
+  const adminBannerHtml = showAdminBanner ? `
+    <div class="admin-banner-btn" id="btn-goto-admin">
+      <div class="admin-banner-icon">${ICON.lock}</div>
+      <div class="admin-banner-content">
+        <div class="admin-banner-title">${t("adminPanel")}</div>
+        <div class="admin-banner-sub">${t("adminPanelSub")}</div>
+      </div>
+      <div class="admin-banner-arrow">›</div>
+    </div>
+  ` : "";
+
   return `
     <div class="screen home-screen">
       <div class="summary home-summary">
@@ -1040,8 +882,106 @@ function screenHome() {
         </div>
       </div>
 
+      ${adminBannerHtml}
+
       <div class="bot-list">${cards}</div>
       <button class="btn btn-primary" id="btn-open-bot" style="margin-top:4px">${ICON.plus} ${t("installNew")}</button>
+    </div>
+  `;
+}
+
+function openCyberPrompt({ title, desc, fields, confirmLabel = t("confirm"), onConfirm }) {
+  const overlay = document.createElement("div");
+  overlay.className = "cyber-modal-overlay";
+  
+  const inputsHtml = fields.map(f => `
+    <input type="${f.type || 'text'}" id="prompt-${f.name}" class="cyber-modal-input" placeholder="${f.placeholder}" value="${f.value || ''}" />
+  `).join("");
+
+  overlay.innerHTML = `
+    <div class="cyber-modal-box">
+      <div class="cyber-modal-title">${title}</div>
+      ${desc ? `<div class="cyber-modal-desc">${desc}</div>` : ""}
+      ${inputsHtml}
+      <div class="cyber-modal-actions">
+        <button class="btn btn-ghost btn-sm" id="modal-cancel">${t("cancel")}</button>
+        <button class="btn btn-primary btn-sm" id="modal-ok">${confirmLabel}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const close = () => overlay.remove();
+  overlay.querySelector("#modal-cancel").addEventListener("click", close);
+  overlay.querySelector("#modal-ok").addEventListener("click", async () => {
+    const values = {};
+    fields.forEach(f => {
+      values[f.name] = overlay.querySelector(`#prompt-${f.name}`).value.trim();
+    });
+    const btn = overlay.querySelector("#modal-ok");
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner"></span>`;
+    try {
+      await onConfirm(values);
+      close();
+    } catch(err) {
+      btn.disabled = false;
+      btn.textContent = confirmLabel;
+      toast(t("admFail"), "err");
+    }
+  });
+}
+
+function screenAdmin() {
+  if (!isSuperAdmin()) {
+    return `<div class="screen"><div class="gate-text">${t("noAccess")}</div></div>`;
+  }
+
+  return `
+    <div class="screen">
+      <div class="section-label">${t("adminPanel")}</div>
+      
+      <div class="admin-grid">
+        <div class="adm-card-btn" id="adm-btn-add">
+          <div class="adm-card-icon">${ICON.plus}</div>
+          <div class="adm-card-name">${t("admWhitelistAdd")}</div>
+        </div>
+
+        <div class="adm-card-btn" id="adm-btn-del">
+          <div class="adm-card-icon">${ICON.trash}</div>
+          <div class="adm-card-name">${t("admWhitelistDel")}</div>
+        </div>
+
+        <div class="adm-card-btn" id="adm-btn-stats">
+          <div class="adm-card-icon">${ICON.server}</div>
+          <div class="adm-card-name">${t("admServerStats")}</div>
+        </div>
+
+        <div class="adm-card-btn" id="adm-btn-allbots">
+          <div class="adm-card-icon">${ICON.chats}</div>
+          <div class="adm-card-name">${t("admAllBots")}</div>
+        </div>
+
+        <div class="adm-card-btn" id="adm-btn-ram">
+          <div class="adm-card-icon">${ICON.settings}</div>
+          <div class="adm-card-name">${t("admRamIncrease")}</div>
+        </div>
+
+        <div class="adm-card-btn danger" id="adm-btn-delete-nick">
+          <div class="adm-card-icon">${ICON.xCircle}</div>
+          <div class="adm-card-name">${t("admDeleteByNick")}</div>
+        </div>
+
+        <div class="adm-card-btn" id="adm-btn-restart-all">
+          <div class="adm-card-icon">${ICON.restart}</div>
+          <div class="adm-card-name">${t("admRestartAll")}</div>
+        </div>
+
+        <div class="adm-card-btn danger" id="adm-btn-reboot">
+          <div class="adm-card-icon">${ICON.alertCircle}</div>
+          <div class="adm-card-name">${t("admRebootServer")}</div>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -1078,16 +1018,13 @@ function screenDetail() {
           <svg class="gauge-svg" viewBox="0 0 220 120">
             <path class="gauge-track" stroke-width="11" d="M 30 110 A 80 80 0 0 1 190 110" />
             <path class="gauge-track" stroke-width="9" d="M 48 110 A 62 62 0 0 1 172 110" />
-
             <path class="gauge-arc-cpu" stroke-width="11" 
               stroke-dasharray="${lenCPU}" stroke-dashoffset="${offCPU}" 
               d="M 30 110 A 80 80 0 0 1 190 110" />
-
             <path class="gauge-arc-ram" stroke-width="9" 
               stroke-dasharray="${lenRAM}" stroke-dashoffset="${offRAM}" 
               d="M 48 110 A 62 62 0 0 1 172 110" />
           </svg>
-
           ${DETAIL_ROBOT_ROCKET_SVG}
         </div>
 
@@ -1117,19 +1054,19 @@ function screenDetail() {
       <div class="section-label" style="margin-top:16px;">${t("management")}</div>
       
       <div class="action-grid-v2">
-        <div class="act-btn-v2" data-action="${isRunning ? "stop" : "start"}" data-anim="pulse">
+        <div class="act-btn-v2" data-action="${isRunning ? "stop" : "start"}">
           ${isRunning ? ICON.stop : ICON.play}
           <span>${isRunning ? t("stop") : t("start")}</span>
         </div>
-        <div class="act-btn-v2" data-action="restart" data-anim="spin">
+        <div class="act-btn-v2" data-action="restart">
           ${ICON.restart}
           <span>${t("restart")}</span>
         </div>
-        <div class="act-btn-v2" data-action="reinstall" data-anim="spin">
+        <div class="act-btn-v2" data-action="reinstall">
           ${ICON.reinstall}
           <span>${t("reinstall")}</span>
         </div>
-        <div class="act-btn-v2 danger" data-action="delete" data-anim="trash">
+        <div class="act-btn-v2 danger" data-action="delete">
           ${ICON.trash}
           <span>${t("delete")}</span>
         </div>
@@ -1138,9 +1075,6 @@ function screenDetail() {
   `;
 }
 
-/* ==========================================================================
-   ЭКРАН НАСТРОЕК
-   ========================================================================== */
 function screenSettings() {
   const sub = STATE.subscription;
   const used = sub?.used_slots ?? STATE.bots.length;
@@ -1161,12 +1095,6 @@ function screenSettings() {
       <div class="sub-cyber-card">
         <div class="dial-wrapper">
           <svg class="dial-svg" viewBox="0 0 96 96">
-            <defs>
-              <linearGradient id="dialGlowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#38bdf8"/>
-                <stop offset="100%" stop-color="#818cf8"/>
-              </linearGradient>
-            </defs>
             <circle class="dial-bg" cx="48" cy="48" r="${radius}" />
             <circle class="dial-fill" cx="48" cy="48" r="${radius}" 
               stroke-dasharray="${circ}" stroke-dashoffset="${offset}" />
@@ -1182,11 +1110,9 @@ function screenSettings() {
             <span class="sub-cyber-lbl">${t("slots")}:</span>
             <span class="sub-cyber-val">${used} / ${max}</span>
           </div>
-          
           <div class="sub-cyber-track">
             <div class="sub-cyber-progress" style="width:${pct}%"></div>
           </div>
-
           <div class="sub-cyber-row" style="margin-top:2px;">
             <span class="sub-cyber-lbl">${t("expires")}:</span>
             <span class="sub-cyber-val">${sub?.expires_at ? fmtDate(sub.expires_at) : "—"}</span>
@@ -1224,9 +1150,6 @@ function screenSettings() {
   `;
 }
 
-/* ==========================================================================
-   ЭКРАН ВЫБОРА ЯЗЫКА
-   ========================================================================== */
 function screenLanguage() {
   const currentLang = window.LANG || LANG || "ru";
   const isRu = currentLang === "ru";
@@ -1235,36 +1158,9 @@ function screenLanguage() {
   return `
     <div class="screen" style="padding-top: 0;">
       <div class="lang-screen-container">
-        
-        <div class="fiber-rays-bg">
-          <div class="fiber-sparkle" style="top:20%; left:25%; animation-delay:0.2s;"></div>
-          <div class="fiber-sparkle" style="top:45%; left:75%; animation-delay:1.5s;"></div>
-          <div class="fiber-sparkle" style="top:70%; left:35%; animation-delay:0.8s;"></div>
-          <div class="fiber-sparkle" style="top:85%; left:65%; animation-delay:2.1s;"></div>
-          
-          <svg class="fiber-svg" viewBox="0 0 400 600" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="fiberGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="#0284c7" stop-opacity="0.1"/>
-                <stop offset="35%" stop-color="#38bdf8" stop-opacity="0.8"/>
-                <stop offset="50%" stop-color="#818cf8" stop-opacity="0.9"/>
-                <stop offset="65%" stop-color="#38bdf8" stop-opacity="0.8"/>
-                <stop offset="100%" stop-color="#0284c7" stop-opacity="0.1"/>
-              </linearGradient>
-            </defs>
-            <path class="fiber-path" stroke="url(#fiberGrad)" stroke-width="1.8" d="M150 0 Q190 250 150 600" stroke-dasharray="120 40"/>
-            <path class="fiber-path" stroke="url(#fiberGrad)" stroke-width="2.5" d="M180 0 Q205 270 180 600" stroke-dasharray="160 50" style="animation-delay: -1s;"/>
-            <path class="fiber-path" stroke="url(#fiberGrad)" stroke-width="3" d="M200 0 Q200 300 200 600" stroke-dasharray="140 30" style="animation-delay: -2s;"/>
-            <path class="fiber-path" stroke="url(#fiberGrad)" stroke-width="2.5" d="M220 0 Q195 270 220 600" stroke-dasharray="160 50" style="animation-delay: -0.5s;"/>
-            <path class="fiber-path" stroke="url(#fiberGrad)" stroke-width="1.8" d="M250 0 Q210 250 250 600" stroke-dasharray="120 40" style="animation-delay: -1.5s;"/>
-          </svg>
-        </div>
-
         <div class="lang-glass-card">
-          <div class="lang-select-item ${isRu ? "active" : ""}" id="lang-btn-ru" data-lang="ru">
-            <div class="lang-flag-wrapper">
-              ${FLAG_RU_SQUARE_3D}
-            </div>
+          <div class="lang-select-item ${isRu ? "active" : ""}" id="lang-btn-ru">
+            <div class="lang-flag-wrapper">${FLAG_RU_SQUARE_3D}</div>
             <div class="lang-item-content">
               <div class="lang-item-title"><span>RU</span>Русский</div>
               <div class="lang-item-sub">${isRu ? t("selectedStack") : t("standardStack")}</div>
@@ -1272,10 +1168,8 @@ function screenLanguage() {
             ${isRu ? `<div class="lang-check-icon">${ICON.check}</div>` : ""}
           </div>
 
-          <div class="lang-select-item ${isEn ? "active" : ""}" id="lang-btn-en" data-lang="en">
-            <div class="lang-flag-wrapper">
-              ${FLAG_GB_ROUND_3D}
-            </div>
+          <div class="lang-select-item ${isEn ? "active" : ""}" id="lang-btn-en">
+            <div class="lang-flag-wrapper">${FLAG_GB_ROUND_3D}</div>
             <div class="lang-item-content">
               <div class="lang-item-title"><span>GB</span>English</div>
               <div class="lang-item-sub">${isEn ? t("selectedStack") : t("standardStack")}</div>
@@ -1283,34 +1177,21 @@ function screenLanguage() {
             ${isEn ? `<div class="lang-check-icon">${ICON.check}</div>` : ""}
           </div>
         </div>
-
       </div>
     </div>
   `;
 }
 
-// Быстрое переключение языка с сохранением навигации и кнопки Назад
 function selectAppLanguage(selectedLang) {
   if (!selectedLang) return;
-  
   window.LANG = selectedLang;
-  if (typeof LANG !== "undefined") {
-    LANG = selectedLang;
-  }
-
+  LANG = selectedLang;
   try {
     localStorage.setItem("mock_lang", selectedLang);
     localStorage.setItem("dhost_lang", selectedLang);
   } catch (_) {}
-
-  // Фоновый запрос на бэкенд
-  if (typeof setLanguage === "function") {
-    setLanguage(selectedLang).catch(() => {});
-  }
-
+  if (typeof setLanguage === "function") setLanguage(selectedLang).catch(() => {});
   if (typeof haptic === "function") haptic("light");
-
-  // Сохраняем историю переходов, чтобы кнопка Назад ВСЕГДА оставалась активной
   NAV.stack = ["home", "settings"];
   render();
 }
@@ -1323,6 +1204,11 @@ function wireEvents(screen) {
   document.getElementById("btn-refresh-top")?.addEventListener("click", refreshHome);
 
   if (screen === "home") {
+    document.getElementById("btn-goto-admin")?.addEventListener("click", () => {
+      haptic("medium");
+      navigateTo("admin");
+    });
+
     document.querySelectorAll(".bot-card").forEach((card) => {
       card.addEventListener("click", () => {
         const bot = STATE.bots.find((b) => b.name === card.dataset.bot);
@@ -1331,18 +1217,141 @@ function wireEvents(screen) {
     });
   }
 
+  if (screen === "admin") {
+    document.getElementById("adm-btn-add")?.addEventListener("click", () => {
+      openCyberPrompt({
+        title: t("admWhitelistAdd"),
+        desc: t("admEnterUserId"),
+        fields: [
+          { name: "uid", placeholder: "Telegram ID", type: "number" },
+          { name: "days", placeholder: t("admEnterDays"), type: "number", value: "30" }
+        ],
+        onConfirm: async (vals) => {
+          if (!vals.uid) return;
+          const res = await window.DHostAPI.adminAddWhitelist(vals.uid, vals.days || 30);
+          if (res.success) {
+            haptic("success");
+            toast(t("admDone"), "ok");
+          } else throw new Error();
+        }
+      });
+    });
+
+    document.getElementById("adm-btn-del")?.addEventListener("click", () => {
+      openCyberPrompt({
+        title: t("admWhitelistDel"),
+        desc: t("admEnterUserId"),
+        fields: [{ name: "uid", placeholder: "Telegram ID", type: "text" }],
+        onConfirm: async (vals) => {
+          if (!vals.uid) return;
+          const res = await window.DHostAPI.adminRemoveWhitelist(vals.uid);
+          if (res.success) {
+            haptic("success");
+            toast(t("admDone"), "ok");
+          } else throw new Error();
+        }
+      });
+    });
+
+    document.getElementById("adm-btn-stats")?.addEventListener("click", async () => {
+      try {
+        const st = await window.DHostAPI.fetchServerStats();
+        openInfoSheet({
+          icon: ICON.server,
+          title: t("admServerStats"),
+          text: `CPU: ${st.cpu_percent}% (${st.cores} cores)<br>RAM: ${st.ram_percent}% (${st.ram_used_mb}/${st.ram_total_mb} MB)<br>Disk: ${st.disk_percent}% (${st.disk_used_gb}/${st.disk_total_gb} GB)<br>Uptime: ${st.uptime}<br>MSK: ${st.time_msk}`,
+          actionLabel: "OK",
+          danger: false
+        });
+      } catch (e) {
+        toast(t("admFail"), "err");
+      }
+    });
+
+    document.getElementById("adm-btn-allbots")?.addEventListener("click", async () => {
+      try {
+        const all = await window.DHostAPI.fetchAdminAllBots();
+        const listStr = all.map(b => `• <b>${b.name}</b> (UID: ${b.uid}) — ${b.status}`).join("<br>") || "Empty";
+        openInfoSheet({
+          icon: ICON.chats,
+          title: t("admAllBots"),
+          text: `<div style="max-height:240px;overflow-y:auto;text-align:left;font-size:12px">${listStr}</div>`,
+          actionLabel: "OK",
+          danger: false
+        });
+      } catch (e) {
+        toast(t("admFail"), "err");
+      }
+    });
+
+    document.getElementById("adm-btn-ram")?.addEventListener("click", () => {
+      openCyberPrompt({
+        title: t("admRamIncrease"),
+        desc: t("admAllBotsOrOne"),
+        fields: [
+          { name: "name", placeholder: "Никнейм (опционально)", type: "text" },
+          { name: "mb", placeholder: t("admEnterMb"), type: "number", value: "512" }
+        ],
+        onConfirm: async (vals) => {
+          if (!vals.mb) return;
+          const res = await window.DHostAPI.adminSetRam(vals.name, vals.mb);
+          if (res.success) {
+            haptic("success");
+            toast(t("admDone"), "ok");
+          } else throw new Error();
+        }
+      });
+    });
+
+    document.getElementById("adm-btn-delete-nick")?.addEventListener("click", () => {
+      openCyberPrompt({
+        title: t("admDeleteByNick"),
+        desc: t("admEnterNick"),
+        fields: [{ name: "name", placeholder: "Например: andre", type: "text" }],
+        onConfirm: async (vals) => {
+          if (!vals.name) return;
+          const res = await window.DHostAPI.adminDeleteBotByName(vals.name);
+          if (res.success) {
+            haptic("success");
+            toast(t("admDone"), "ok");
+          } else throw new Error();
+        }
+      });
+    });
+
+    document.getElementById("adm-btn-restart-all")?.addEventListener("click", () => {
+      openSheet({
+        icon: ICON.restart,
+        title: t("admRestartAll"),
+        text: t("admConfirmRestartAll"),
+        confirmLabel: t("confirm"),
+        danger: false,
+        onConfirm: async () => {
+          const res = await window.DHostAPI.adminRestartAllServices();
+          if (res.success) toast(t("admDone"), "ok");
+          else toast(t("admFail"), "err");
+        }
+      });
+    });
+
+    document.getElementById("adm-btn-reboot")?.addEventListener("click", () => {
+      openSheet({
+        icon: ICON.alertCircle,
+        title: t("admRebootServer"),
+        text: t("admConfirmReboot"),
+        confirmLabel: t("confirm"),
+        danger: true,
+        onConfirm: async () => {
+          await window.DHostAPI.adminRebootServer();
+          toast(t("admDone"), "ok");
+        }
+      });
+    });
+  }
+
   if (screen === "detail") {
     document.querySelectorAll(".act-btn-v2").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const anim = btn.dataset.anim;
-        if (anim === "spin") btn.classList.add("spin-active");
-        if (anim === "pulse") btn.classList.add("pulse-active");
-        if (anim === "trash") btn.classList.add("trash-active");
-
-        setTimeout(() => {
-          btn.classList.remove("spin-active", "pulse-active", "trash-active");
-        }, 600);
-
         if (typeof handleBotAction === "function") {
           handleBotAction(btn.dataset.action, NAV.params.name);
         }
@@ -1356,18 +1365,12 @@ function wireEvents(screen) {
   }
 
   if (screen === "language") {
-    const btnRu = document.getElementById("lang-btn-ru");
-    const btnEn = document.getElementById("lang-btn-en");
-
-    btnRu?.addEventListener("click", (e) => {
+    document.getElementById("lang-btn-ru")?.addEventListener("click", (e) => {
       e.preventDefault();
-      e.stopPropagation();
       selectAppLanguage("ru");
     });
-
-    btnEn?.addEventListener("click", (e) => {
+    document.getElementById("lang-btn-en")?.addEventListener("click", (e) => {
       e.preventDefault();
-      e.stopPropagation();
       selectAppLanguage("en");
     });
   }
@@ -1411,6 +1414,7 @@ function render() {
     detail: screenDetail,
     settings: screenSettings,
     language: screenLanguage,
+    admin: screenAdmin,
     chats: typeof screenChats === "function" ? screenChats : () => "",
     chat: typeof screenChat === "function" ? screenChat : () => ""
   }[screen]();
@@ -1422,7 +1426,6 @@ function render() {
 
 window.render = render;
 
-/* --- ТИХОЕ АВТООБНОВЛЕНИЕ КАЖДЫЕ 3 СЕКУНДЫ --- */
 let autoRefreshBusy = false;
 setInterval(async () => {
   if (autoRefreshBusy || STATE.loading || STATE.authorized === false) return;
@@ -1435,7 +1438,6 @@ setInterval(async () => {
       fetchBots(),
       fetchSubscription().catch(() => STATE.subscription)
     ]);
-    
     if (Array.isArray(bots)) {
       STATE.bots = bots;
       if (sub) STATE.subscription = sub;
