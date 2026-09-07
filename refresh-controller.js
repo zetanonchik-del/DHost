@@ -1,11 +1,7 @@
-/* DHost refresh controller.
- * Initial load may show the skeleton. Subsequent 3s/live refreshes never replace
- * the page with a loading skeleton, so the home screen stays visually stable.
- */
+/* DHost refresh controller */
 (() => {
   if (window.__DHOST_REFRESH_CONTROLLER_V1 || typeof window.loadAll !== 'function') return;
 
-  const originalLoadAll = window.loadAll;
   let loadedOnce = false;
 
   window.loadAll = async function stableLoadAll() {
@@ -20,6 +16,7 @@
       const auth = await fetchAuthStatus();
       STATE.authorized = auth.authorized;
       STATE.canManageChats = Boolean(auth.can_manage_chats);
+      STATE.isSuperAdmin = Boolean(auth.is_super_admin);
 
       if (auth.authorized) {
         const [bots, sub] = await Promise.all([fetchBots(), fetchSubscription()]);
@@ -31,6 +28,7 @@
       STATE.authorized = false;
       STATE.bots = [];
       STATE.subscription = null;
+      STATE.isSuperAdmin = false;
       toast(t('actionError'), 'err');
     } finally {
       STATE.loading = false;
