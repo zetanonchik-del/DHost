@@ -1,20 +1,16 @@
 /* ==========================================================================
-   UserBotHost UI Cyberpunk Redesign (Fix: Layout, Single Flag, Full PC i18n)
-   - Расширенный круговой индикатор (свободно вмещает трехзначные числа)
-   - Одиночный флаг Великобритании (GB) для EN и России (RU) для RU
-   - Убраны строки Next unlock и Status
-   - Полная синхронизация переводов для Desktop / PC и мобильных устройств
+   UserBotHost UI Cyberpunk Redesign (Bugfix: Language Select & Flag Switch)
    ========================================================================== */
 
 const UI = { query: "", filter: "all" };
 
-// Синхронизация языка при запуске (включая Desktop / Браузер)
+// Синхронизация языка
 function syncSavedLanguage() {
   try {
     const saved = localStorage.getItem("mock_lang") || localStorage.getItem("dhost_lang");
     if (saved === "ru" || saved === "en") {
       window.LANG = saved;
-    } else if (typeof LANG === "undefined") {
+    } else if (typeof window.LANG === "undefined" || !window.LANG) {
       window.LANG = "ru";
     }
   } catch (_) {
@@ -23,7 +19,7 @@ function syncSavedLanguage() {
 }
 syncSavedLanguage();
 
-// Полный словарь переводов для всех экранов
+// Словарь переводов
 if (typeof STR !== "undefined") {
   STR.ru = Object.assign(STR.ru || {}, {
     appTitle: "Юзерботы",
@@ -165,7 +161,7 @@ const ICON_SUPPORT_NEON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentC
   <circle cx="12" cy="12" r="1"></circle>
 </svg>`;
 
-// Одиночные бейджи флагов для строки языка
+// Флаг Великобритании (Английский)
 const BADGE_GB_SINGLE = `<div class="flag-badge-single">
   <svg viewBox="0 0 32 32">
     <clipPath id="circleClipGB"><circle cx="16" cy="16" r="15"/></clipPath>
@@ -180,6 +176,7 @@ const BADGE_GB_SINGLE = `<div class="flag-badge-single">
   </svg>
 </div>`;
 
+// Флаг России (Русский)
 const BADGE_RU_SINGLE = `<div class="flag-badge-single">
   <svg viewBox="0 0 32 32">
     <clipPath id="circleClipRU"><circle cx="16" cy="16" r="15"/></clipPath>
@@ -505,7 +502,6 @@ const FULL_REDESIGN_STYLE = `
   overflow: hidden;
 }
 
-/* Увеличенный круговой индикатор (свободно вмещает 3-значные цифры) */
 .dial-wrapper {
   position: relative;
   width: 96px;
@@ -559,7 +555,6 @@ const FULL_REDESIGN_STYLE = `
   letter-spacing: 0.05em;
 }
 
-/* Правая информационная колонка подписки */
 .sub-cyber-info {
   flex: 1;
   min-width: 0;
@@ -598,7 +593,6 @@ const FULL_REDESIGN_STYLE = `
   transition: width 0.5s ease;
 }
 
-/* 3D Кнопки настроек */
 .cyber-list-card {
   display: flex;
   flex-direction: column;
@@ -664,7 +658,6 @@ const FULL_REDESIGN_STYLE = `
   margin-top: 2px;
 }
 
-/* Одиночный флаг-бейдж */
 .flag-badge-single {
   width: 24px;
   height: 24px;
@@ -783,6 +776,7 @@ const FULL_REDESIGN_STYLE = `
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
   animation: flagFloat 4s ease-in-out infinite alternate;
 }
 @keyframes flagFloat {
@@ -792,6 +786,7 @@ const FULL_REDESIGN_STYLE = `
 .flag-3d-round, .flag-3d-square {
   width: 100%;
   height: 100%;
+  pointer-events: none;
   filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
 }
 
@@ -800,6 +795,7 @@ const FULL_REDESIGN_STYLE = `
   min-width: 0;
   display: flex;
   flex-direction: column;
+  pointer-events: none;
 }
 .lang-item-title {
   font-size: 16px;
@@ -828,6 +824,7 @@ const FULL_REDESIGN_STYLE = `
   align-items: center;
   justify-content: center;
   color: #38bdf8;
+  pointer-events: none;
   filter: drop-shadow(0 0 8px #38bdf8);
 }
 .lang-check-icon svg {
@@ -910,6 +907,7 @@ function getHeaderSubtitle() {
 }
 
 function renderHeader(screen) {
+  syncSavedLanguage();
   if (screen === "home") {
     return `
       <div class="topbar topbar-home">
@@ -1137,7 +1135,7 @@ function screenDetail() {
 }
 
 /* ==========================================================================
-   ЭКРАН НАСТРОЕК (ПОЛНОСТЬЮ ОБНОВЛЕН)
+   ЭКРАН НАСТРОЕК
    ========================================================================== */
 function screenSettings() {
   syncSavedLanguage();
@@ -1146,12 +1144,11 @@ function screenSettings() {
   const max = sub?.max_slots ?? (used || 1);
   const pct = Math.min((used / max) * 100, 100);
 
-  // Радиус под 96px индикатор: 48px центр, 38px радиус (2 * PI * 38 ≈ 238.76)
   const radius = 38;
   const circ = 2 * Math.PI * radius;
   const offset = circ - (pct / 100) * circ;
 
-  const currentFlagBadge = LANG === "ru" ? BADGE_RU_SINGLE : BADGE_GB_SINGLE;
+  const currentFlagBadge = window.LANG === "ru" ? BADGE_RU_SINGLE : BADGE_GB_SINGLE;
 
   return `
     <div class="screen">
@@ -1228,8 +1225,8 @@ function screenSettings() {
    ========================================================================== */
 function screenLanguage() {
   syncSavedLanguage();
-  const isRu = LANG === "ru";
-  const isEn = LANG === "en";
+  const isRu = window.LANG === "ru";
+  const isEn = window.LANG === "en";
 
   return `
     <div class="screen" style="padding-top: 0;">
@@ -1329,26 +1326,31 @@ function wireEvents(screen) {
   }
 
   if (screen === "language") {
-    document.querySelectorAll("[data-lang]").forEach((el) => {
-      el.addEventListener("click", async () => {
-        const selectedLang = el.dataset.lang;
-        if (selectedLang === LANG) return;
-        
+    // Надежный делегированный клик
+    const glassCard = document.querySelector(".lang-glass-card");
+    if (glassCard) {
+      glassCard.addEventListener("click", async (e) => {
+        const item = e.target.closest("[data-lang]");
+        if (!item) return;
+
+        const selectedLang = item.dataset.lang;
+        if (!selectedLang) return;
+
         window.LANG = selectedLang;
         try {
           localStorage.setItem("mock_lang", selectedLang);
           localStorage.setItem("dhost_lang", selectedLang);
         } catch (_) {}
-        
+
         if (typeof setLanguage === "function") {
           await setLanguage(selectedLang);
         }
-        
+
         if (typeof haptic === "function") haptic("light");
-        NAV.stack = ["home"];
+        NAV.stack = ["settings"];
         render();
       });
-    });
+    }
   }
 }
 
