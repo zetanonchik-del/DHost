@@ -1,5 +1,5 @@
 /* ==========================================================================
-   UserBotHost UI Cyberpunk Redesign (Fixed Language Selection & Non-Blocking)
+   UserBotHost UI Cyberpunk Redesign (Fix: Back Button & Instant Language Apply)
    ========================================================================== */
 
 const UI = { query: "", filter: "all" };
@@ -10,7 +10,7 @@ function syncSavedLanguage() {
     const saved = localStorage.getItem("mock_lang") || localStorage.getItem("dhost_lang");
     if (saved === "ru" || saved === "en") {
       window.LANG = saved;
-    } else if (typeof window.LANG === "undefined" || !window.LANG) {
+    } else if (!window.LANG) {
       window.LANG = "ru";
     }
   } catch (_) {
@@ -19,7 +19,7 @@ function syncSavedLanguage() {
 }
 syncSavedLanguage();
 
-// Полный словарь переводов
+// Словарь переводов
 if (typeof STR !== "undefined") {
   STR.ru = Object.assign(STR.ru || {}, {
     appTitle: "Юзерботы",
@@ -912,7 +912,6 @@ function getHeaderSubtitle() {
 }
 
 function renderHeader(screen) {
-  syncSavedLanguage();
   if (screen === "home") {
     return `
       <div class="topbar topbar-home">
@@ -1143,7 +1142,6 @@ function screenDetail() {
    ЭКРАН НАСТРОЕК
    ========================================================================== */
 function screenSettings() {
-  syncSavedLanguage();
   const sub = STATE.subscription;
   const used = sub?.used_slots ?? STATE.bots.length;
   const max = sub?.max_slots ?? (used || 1);
@@ -1153,7 +1151,8 @@ function screenSettings() {
   const circ = 2 * Math.PI * radius;
   const offset = circ - (pct / 100) * circ;
 
-  const currentFlagBadge = window.LANG === "en" ? BADGE_GB_SINGLE : BADGE_RU_SINGLE;
+  const currentLang = window.LANG || LANG || "ru";
+  const currentFlagBadge = currentLang === "en" ? BADGE_GB_SINGLE : BADGE_RU_SINGLE;
 
   return `
     <div class="screen">
@@ -1229,9 +1228,9 @@ function screenSettings() {
    ЭКРАН ВЫБОРА ЯЗЫКА
    ========================================================================== */
 function screenLanguage() {
-  syncSavedLanguage();
-  const isRu = window.LANG === "ru";
-  const isEn = window.LANG === "en";
+  const currentLang = window.LANG || LANG || "ru";
+  const isRu = currentLang === "ru";
+  const isEn = currentLang === "en";
 
   return `
     <div class="screen" style="padding-top: 0;">
@@ -1290,25 +1289,29 @@ function screenLanguage() {
   `;
 }
 
-// Быстрое и безопасное переключение языка без зависания интерфейса
+// Быстрое переключение языка с сохранением навигации и кнопки Назад
 function selectAppLanguage(selectedLang) {
   if (!selectedLang) return;
   
   window.LANG = selectedLang;
+  if (typeof LANG !== "undefined") {
+    LANG = selectedLang;
+  }
+
   try {
     localStorage.setItem("mock_lang", selectedLang);
     localStorage.setItem("dhost_lang", selectedLang);
   } catch (_) {}
 
-  // Фоновая отправка на сервер (без блокировки UI)
+  // Фоновый запрос на бэкенд
   if (typeof setLanguage === "function") {
     setLanguage(selectedLang).catch(() => {});
   }
 
   if (typeof haptic === "function") haptic("light");
 
-  // Возврат на экран настроек и немедленная перерисовка
-  NAV.stack = ["settings"];
+  // Сохраняем историю переходов, чтобы кнопка Назад ВСЕГДА оставалась активной
+  NAV.stack = ["home", "settings"];
   render();
 }
 
@@ -1398,7 +1401,6 @@ async function refreshHome() {
 }
 
 function render() {
-  syncSavedLanguage();
   injectRedesignStyle();
   installTouchGlow();
   const app = document.getElementById("app");
