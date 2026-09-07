@@ -1,12 +1,14 @@
 /* ==========================================================================
    UserBotHost UI Cyberpunk Redesign (Settings & Language Screen Upgrade)
-   - Обновленный экран настроек: круговой циферблат слотов + 3D кнопки
+   - Полная мультиязычность (RU / EN) для всех экранов, заголовков и подписей
+   - Экран настроек: круговой циферблат слотов + 3D кнопки
    - Экран выбора языка с анимированными оптоволоконными лучами и 3D флагами
-   - Полная интеграция с i18n, Telegram WebApp и автообновлением
+   - Интеграция с API, Telegram WebApp и тихим автообновлением
    ========================================================================== */
 
 const UI = { query: "", filter: "all" };
 
+// Синхронизируем язык сразу при старте
 try {
   const saved = localStorage.getItem("mock_lang") || localStorage.getItem("dhost_lang");
   if (saved === "ru" || saved === "en") {
@@ -14,8 +16,11 @@ try {
   }
 } catch (_) {}
 
+// Полный словарь переводов для всех экранов
 if (typeof STR !== "undefined") {
   STR.ru = Object.assign(STR.ru || {}, {
+    appTitle: "Юзерботы",
+    userbot: "Юзербот",
     subOne: "Твой юзербот — под контролем",
     subMany: "Твои юзерботы — под контролем",
     usedSlots: "использовано",
@@ -24,10 +29,13 @@ if (typeof STR !== "undefined") {
     errorStatus: "Ошибки",
     runningStatus: "Работают",
     management: "Управление",
+    subscription: "Подписка",
     slots: "Слоты",
     expires: "Действует до",
     installNew: "Установить юзербота",
     settings: "Настройки",
+    language: "Язык",
+    support: "Поддержка",
     refresh: "Обновить",
     created: "создан",
     uptime: "аптайм",
@@ -40,14 +48,21 @@ if (typeof STR !== "undefined") {
     stopped: "остановлен",
     installing: "установка…",
     error: "ошибка",
-    langSub: "Текущий стек",
+    langSub: "Стандартный стек",
     supportSub: "Служба поддержки",
     statusActive: "Активна",
     standardStack: "Стандартный стек",
-    selectedStack: "Выбранный стек"
+    selectedStack: "Выбранный стек",
+    statusLabel: "Статус:",
+    nextUnlockAt: "Следующий уровень при",
+    emptyTitle: "Пока нет юзерботов",
+    emptyText: "Установка начинается в чате с ботом — там бот проведёт вас через вход в аккаунт.",
+    currentLangDisplay: "Русский"
   });
 
   STR.en = Object.assign(STR.en || {}, {
+    appTitle: "Userbots",
+    userbot: "Userbot",
     subOne: "Your userbot — under control",
     subMany: "Your userbots — under control",
     usedSlots: "used",
@@ -56,10 +71,13 @@ if (typeof STR !== "undefined") {
     errorStatus: "Errors",
     runningStatus: "Running",
     management: "Actions",
+    subscription: "Subscription",
     slots: "Slots",
     expires: "Expires",
     installNew: "Install a userbot",
     settings: "Settings",
+    language: "Language",
+    support: "Support",
     refresh: "Refresh",
     created: "created",
     uptime: "uptime",
@@ -76,7 +94,12 @@ if (typeof STR !== "undefined") {
     supportSub: "Contact Support",
     statusActive: "Active",
     standardStack: "Standard Stack",
-    selectedStack: "Selected Stack"
+    selectedStack: "Selected Stack",
+    statusLabel: "Status:",
+    nextUnlockAt: "Next unlock at",
+    emptyTitle: "No userbots yet",
+    emptyText: "Installation starts in the bot's chat, where it walks you through signing in.",
+    currentLangDisplay: "English (US)"
   });
 }
 
@@ -141,18 +164,6 @@ const ICON_SUPPORT_NEON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentC
   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
   <path d="M9 10a3 3 0 0 1 6 0v2"></path>
   <circle cx="12" cy="12" r="1"></circle>
-</svg>`;
-
-const FLAG_RU_SVG = `<svg viewBox="0 0 32 32" class="flag-icon-svg ru-badge">
-  <defs>
-    <filter id="flagShadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.35"/>
-    </filter>
-  </defs>
-  <rect width="32" height="32" rx="7" fill="#fff" filter="url(#flagShadow)"/>
-  <path d="M0 10.66h32v10.68H0z" fill="#0039A6"/>
-  <path d="M0 21.34h32V32H0z" fill="#D52B1E"/>
-  <rect width="32" height="32" rx="7" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.2"/>
 </svg>`;
 
 const FLAG_US_GB_SVG = `<div class="flags-overlap">
@@ -232,7 +243,6 @@ const FULL_REDESIGN_STYLE = `
   -webkit-tap-highlight-color: transparent !important;
 }
 
-/* Неоновый отклик при касании */
 .mobile-touch-glow {
   position: fixed !important;
   width: 60px !important;
@@ -472,9 +482,7 @@ const FULL_REDESIGN_STYLE = `
 .act-btn-v2:active { transform: scale(0.96); border-color: rgba(255, 255, 255, 0.2); }
 .act-btn-v2 svg { width: 22px; height: 22px; color: #94a3b8; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s; }
 
-/* ==========================================================================
-   НОВЫЙ ДИЗАЙН НАСТРОЕК (СКРИНШОТЫ 2 и 3)
-   ========================================================================== */
+/* Экран Настроек */
 .sub-cyber-card {
   background: linear-gradient(145deg, #121820, #0c1015);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -488,7 +496,6 @@ const FULL_REDESIGN_STYLE = `
   overflow: hidden;
 }
 
-/* Круговой индикатор слотов */
 .dial-wrapper {
   position: relative;
   width: 82px;
@@ -536,7 +543,6 @@ const FULL_REDESIGN_STYLE = `
   margin-top: 1px;
 }
 
-/* Правая колонка информации о подписке */
 .sub-cyber-info {
   flex: 1;
   min-width: 0;
@@ -595,7 +601,6 @@ const FULL_REDESIGN_STYLE = `
   box-shadow: 0 0 8px #10b981;
 }
 
-/* 3D Неоновые кнопки (Скриншот 3) */
 .cyber-list-card {
   display: flex;
   flex-direction: column;
@@ -661,7 +666,6 @@ const FULL_REDESIGN_STYLE = `
   margin-top: 2px;
 }
 
-/* Перекрывающиеся мини-флаги */
 .flags-overlap {
   display: flex;
   align-items: center;
@@ -685,9 +689,7 @@ const FULL_REDESIGN_STYLE = `
   margin-left: 6px;
 }
 
-/* ==========================================================================
-   НОВЫЙ ЭКРАН ВЫБОРА ЯЗЫКА С АНИМИРОВАННЫМ ФОНОМ (СКРИНШОТ 4)
-   ========================================================================== */
+/* Экран Выбора Языка */
 .lang-screen-container {
   position: relative;
   min-height: calc(100vh - 120px);
@@ -698,7 +700,6 @@ const FULL_REDESIGN_STYLE = `
   overflow: hidden;
 }
 
-/* Анимированные неоновые лучи / оптоволокно на фоне */
 .fiber-rays-bg {
   position: absolute;
   inset: -20px 0;
@@ -727,7 +728,6 @@ const FULL_REDESIGN_STYLE = `
   100% { stroke-dashoffset: 80; opacity: 0.5; }
 }
 
-/* Плавающие искры пыли */
 .fiber-sparkle {
   position: absolute;
   width: 3px;
@@ -742,7 +742,6 @@ const FULL_REDESIGN_STYLE = `
   50% { transform: translateY(-30px) scale(1.3); opacity: 0.9; }
 }
 
-/* Стеклянная полупрозрачная карточка (Glassmorphism) */
 .lang-glass-card {
   position: relative;
   z-index: 10;
@@ -760,7 +759,6 @@ const FULL_REDESIGN_STYLE = `
   gap: 12px;
 }
 
-/* Строки языков */
 .lang-select-item {
   position: relative;
   display: flex;
@@ -782,7 +780,6 @@ const FULL_REDESIGN_STYLE = `
   box-shadow: 0 0 25px rgba(56, 189, 248, 0.35), inset 0 0 15px rgba(56, 189, 248, 0.12);
 }
 
-/* 3D Иконки флагов */
 .lang-flag-wrapper {
   width: 48px;
   height: 48px;
@@ -935,17 +932,29 @@ function renderHeader(screen) {
       </div>
     `;
   }
-  const meta = HEADER_META[screen] || HEADER_META.home;
+  
+  // Актуализация заголовков для любого экрана
+  const titles = {
+    settings: t("settings"),
+    language: t("language"),
+    detail: t("userbot"),
+    home: t("appTitle"),
+    gate: t("appTitle")
+  };
+  
+  const currentTitle = titles[screen] || (HEADER_META[screen]?.title ? HEADER_META[screen].title() : "UserBotHost");
+  const currentSub = screen === "detail" ? (NAV.params.name || "") : "";
   const showBack = NAV.stack.length > 1;
+
   return `
     <div class="topbar">
       ${showBack ? `<div class="topbar-back" id="btn-back">${ICON.back}</div>` : ""}
       <div>
-        <div class="topbar-title">${meta.title()}</div>
-        ${meta.sub() ? `<div class="topbar-sub">${meta.sub()}</div>` : ""}
+        <div class="topbar-title">${currentTitle}</div>
+        ${currentSub ? `<div class="topbar-sub">${currentSub}</div>` : ""}
       </div>
       <div class="topbar-spacer"></div>
-      ${meta.action === "settings" ? `<div class="topbar-action" id="btn-settings">${ICON.settings}</div>` : ""}
+      ${screen === "home" ? `<div class="topbar-action" id="btn-settings">${ICON.settings}</div>` : ""}
     </div>
   `;
 }
@@ -1141,13 +1150,9 @@ function screenSettings() {
   const max = sub?.max_slots ?? (used || 1);
   const pct = Math.min((used / max) * 100, 100);
 
-  // Параметры для кругового циферблата
   const radius = 32;
   const circ = 2 * Math.PI * radius;
   const offset = circ - (pct / 100) * circ;
-
-  const currentLangLabel = LANG === "ru" ? "Русский" : "English (US)";
-  const currentLangSub = LANG === "ru" ? "Стандартный стек" : "English stack";
 
   return `
     <div class="screen">
@@ -1168,14 +1173,14 @@ function screenSettings() {
           </svg>
           <div class="dial-center-box">
             <span class="dial-val">${used} / ${max}</span>
-            <span class="dial-sub">Slots</span>
+            <span class="dial-sub">${t("slots")}</span>
           </div>
         </div>
 
         <div class="sub-cyber-info">
           <div class="sub-cyber-row">
-            <span class="sub-cyber-lbl">Slots:</span>
-            <span class="sub-cyber-val">${used} / ${max} <span>(Next unlock at ${max})</span></span>
+            <span class="sub-cyber-lbl">${t("slots")}:</span>
+            <span class="sub-cyber-val">${used} / ${max} <span>(${t("nextUnlockAt")} ${max})</span></span>
           </div>
           
           <div class="sub-cyber-track">
@@ -1183,12 +1188,12 @@ function screenSettings() {
           </div>
 
           <div class="sub-cyber-row" style="margin-top:2px;">
-            <span class="sub-cyber-lbl">Expires:</span>
+            <span class="sub-cyber-lbl">${t("expires")}:</span>
             <span class="sub-cyber-val">${sub?.expires_at ? fmtDate(sub.expires_at) : "—"}</span>
           </div>
 
           <div class="sub-cyber-row">
-            <span class="sub-cyber-lbl">Status:</span>
+            <span class="sub-cyber-lbl">${t("statusLabel")}</span>
             <span class="status-active-badge"><span class="dot"></span>${t("statusActive")}</span>
           </div>
         </div>
@@ -1203,7 +1208,7 @@ function screenSettings() {
           </div>
           <div class="cyber-btn-text">
             <div class="cyber-btn-title">${t("language")}</div>
-            <div class="cyber-btn-sub">${currentLangSub}</div>
+            <div class="cyber-btn-sub">${t("langSub")}</div>
           </div>
           <div class="flags-overlap">
             ${FLAG_US_GB_SVG}
@@ -1227,7 +1232,7 @@ function screenSettings() {
 }
 
 /* ==========================================================================
-   ЭКРАН ВЫБОРА ЯЗЫКА (ПО СКРИНШОТУ 4 С АНИМАЦИЕЙ)
+   ЭКРАН ВЫБОРА ЯЗЫКА (ПО СКРИНШОТУ 4)
    ========================================================================== */
 function screenLanguage() {
   const isRu = LANG === "ru";
