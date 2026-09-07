@@ -1,24 +1,24 @@
 /* ==========================================================================
-   UserBotHost UI Cyberpunk Redesign (Mobile & Desktop Perfected)
-   - Исправлена двойная точка статуса
-   - Чёткие неоновые рамки CPU (зелёная) и RAM (голубая)
-   - Гарантированный неоновый всплеск на мобильных устройствах (touchstart/pointerdown)
-   - Полная мультиязычность
+   UserBotHost UI Cyberpunk Redesign (Final Universal Fix)
+   - Принудительный и полный перевод главного экрана и деталей
+   - Отключены блокировки старого кэша
+   - Круговые индикаторы, цветные неоновые рамки, тактильный неоновый клик
+   - Тихий автоопрос каждые 3 секунды
    ========================================================================== */
 
 const UI = { query: "", filter: "all" };
 
-// Синхронизация языка
+// Синхронизируем язык сразу при старте
 try {
-  const savedLang = localStorage.getItem("mock_lang") || localStorage.getItem("dhost_lang");
-  if (savedLang && (savedLang === "ru" || savedLang === "en")) {
-    LANG = savedLang;
+  const saved = localStorage.getItem("mock_lang") || localStorage.getItem("dhost_lang");
+  if (saved === "ru" || saved === "en") {
+    LANG = saved;
   }
 } catch (_) {}
 
-// Словарь i18n
+// Дополняем глобальный словарь STR всеми фразами
 if (typeof STR !== "undefined") {
-  Object.assign(STR.ru, {
+  STR.ru = Object.assign(STR.ru || {}, {
     subOne: "Твой юзербот — под контролем",
     subMany: "Твои юзерботы — под контролем",
     usedSlots: "использовано",
@@ -27,8 +27,25 @@ if (typeof STR !== "undefined") {
     errorStatus: "Ошибки",
     runningStatus: "Работают",
     management: "Управление",
+    slots: "Слоты",
+    expires: "Действует до",
+    installNew: "Установить юзербота",
+    settings: "Настройки",
+    refresh: "Обновить",
+    created: "создан",
+    uptime: "аптайм",
+    stop: "Остановить",
+    start: "Запустить",
+    restart: "Перезапуск",
+    reinstall: "Переустановить",
+    delete: "Удалить",
+    running: "работает",
+    stopped: "остановлен",
+    installing: "установка…",
+    error: "ошибка"
   });
-  Object.assign(STR.en, {
+
+  STR.en = Object.assign(STR.en || {}, {
     subOne: "Your userbot — under control",
     subMany: "Your userbots — under control",
     usedSlots: "used",
@@ -37,6 +54,22 @@ if (typeof STR !== "undefined") {
     errorStatus: "Errors",
     runningStatus: "Running",
     management: "Actions",
+    slots: "Slots",
+    expires: "Expires",
+    installNew: "Install a userbot",
+    settings: "Settings",
+    refresh: "Refresh",
+    created: "created",
+    uptime: "uptime",
+    stop: "Stop",
+    start: "Start",
+    restart: "Restart",
+    reinstall: "Reinstall",
+    delete: "Delete",
+    running: "running",
+    stopped: "stopped",
+    installing: "installing…",
+    error: "error"
   });
 }
 
@@ -92,7 +125,6 @@ const DETAIL_ROBOT_ROCKET_SVG = `<svg viewBox="0 0 100 100" class="gauge-center-
   <path d="M 43 58 Q 50 62 57 58" stroke="#818cf8" stroke-width="2" stroke-linecap="round" fill="none"/>
 </svg>`;
 
-/* --- СТИЛИ ДИЗАЙНА --- */
 const FULL_REDESIGN_STYLE = `
 :root {
   --neon-blue: #3b82f6;
@@ -105,7 +137,7 @@ const FULL_REDESIGN_STYLE = `
   -webkit-tap-highlight-color: transparent !important;
 }
 
-/* Мобильный неоновый клик (Touch Wave) */
+/* Неоновый отклик при касании */
 .mobile-touch-glow {
   position: fixed !important;
   width: 60px !important;
@@ -124,7 +156,7 @@ const FULL_REDESIGN_STYLE = `
   100% { transform: scale(2.2); opacity: 0; }
 }
 
-/* ИСПРАВЛЕНИЕ: строго одна точка у статуса, убираем псевдоэлементы */
+/* Строго одна светящаяся точка статуса */
 .status-pill {
   display: inline-flex !important;
   align-items: center !important;
@@ -143,20 +175,11 @@ const FULL_REDESIGN_STYLE = `
 }
 .status-dot::before,
 .status-dot::after {
-  display: none !important; /* Убирает второй круг */
+  display: none !important;
 }
-.status-running .status-dot {
-  background: #10b981 !important;
-  box-shadow: 0 0 8px #10b981 !important;
-}
-.status-installing .status-dot {
-  background: #f59e0b !important;
-  box-shadow: 0 0 8px #f59e0b !important;
-}
-.status-error .status-dot {
-  background: #ef4444 !important;
-  box-shadow: 0 0 8px #ef4444 !important;
-}
+.status-running .status-dot { background: #10b981 !important; box-shadow: 0 0 8px #10b981 !important; }
+.status-installing .status-dot { background: #f59e0b !important; box-shadow: 0 0 8px #f59e0b !important; }
+.status-error .status-dot { background: #ef4444 !important; box-shadow: 0 0 8px #ef4444 !important; }
 
 /* Header */
 .topbar-home {
@@ -273,7 +296,7 @@ const FULL_REDESIGN_STYLE = `
 }
 .bot-card-meta-foot svg { width: 14px; height: 14px; }
 
-/* Экран деталей (screenDetail) */
+/* Detail Screen */
 .detail-cyber-card {
   background: linear-gradient(165deg, #121820 0%, #0a0e14 100%) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -319,7 +342,6 @@ const FULL_REDESIGN_STYLE = `
   50% { transform: translateX(-50%) translateY(-5px); }
 }
 
-/* ИСПРАВЛЕНИЕ: Яркие неоновые рамки для CPU и RAM на смартфонах */
 .gauge-metrics-values {
   display: grid !important;
   grid-template-columns: 1fr 1fr !important;
@@ -355,7 +377,6 @@ const FULL_REDESIGN_STYLE = `
 .meta-lbl { font-size: 11px; color: var(--text-faint); margin-bottom: 4px; }
 .meta-val { font-size: 14px; font-weight: 700; font-family: var(--font-mono); color: #e2e8f0; }
 
-/* Кнопки управления */
 .action-grid-v2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
 .act-btn-v2 {
   background: linear-gradient(145deg, #131922, #0d1218);
@@ -368,10 +389,7 @@ const FULL_REDESIGN_STYLE = `
   position: relative; overflow: hidden;
 }
 .act-btn-v2:active { transform: scale(0.96); border-color: rgba(255, 255, 255, 0.2); }
-.act-btn-v2 svg {
-  width: 22px; height: 22px; color: #94a3b8;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s;
-}
+.act-btn-v2 svg { width: 22px; height: 22px; color: #94a3b8; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s; }
 
 .act-btn-v2.spin-active svg { animation: actRotate 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
 @keyframes actRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -401,7 +419,6 @@ function injectRedesignStyle() {
   s.textContent = FULL_REDESIGN_STYLE;
 }
 
-/* Гарантированный неоновый клик на смартфонах и ПК */
 function installTouchGlow() {
   if (window.__DHOST_TOUCH_GLOW_INSTALLED) return;
   window.__DHOST_TOUCH_GLOW_INSTALLED = true;
@@ -465,7 +482,6 @@ function getHeaderSubtitle() {
   return count === 1 ? t("subOne") : t("subMany");
 }
 
-/* --- РЕНДЕР HEADER --- */
 function renderHeader(screen) {
   if (screen === "home") {
     return `
@@ -500,7 +516,6 @@ function renderHeader(screen) {
   `;
 }
 
-/* --- РЕНДЕР ГЛАВНОГО ЭКРАНА --- */
 function screenHome() {
   if (STATE.loading) return `<div class="screen home-screen"><div class="skel skel-card"></div><div class="skel skel-card"></div></div>`;
   if (!STATE.bots.length) {
@@ -508,7 +523,7 @@ function screenHome() {
       <div class="gate-icon">${ICON.server}</div>
       <div class="gate-title">${t("emptyTitle")}</div>
       <div class="gate-text">${t("emptyText")}</div>
-      <button class="btn btn-primary" id="btn-open-bot">${ICON.plus}${t("installNew")}</button>
+      <button class="btn btn-primary" id="btn-open-bot">${ICON.plus} ${t("installNew")}</button>
     </div>`;
   }
 
@@ -591,7 +606,6 @@ function screenHome() {
   `;
 }
 
-/* --- РЕНДЕР ЭКРАНА ДЕТАЛЕЙ (DETAIL) --- */
 function screenDetail() {
   const bot = STATE.bots.find((b) => b.name === NAV.params.name);
   if (!bot) return `<div class="screen"><div class="gate-text">Not found</div></div>`;
@@ -637,7 +651,6 @@ function screenDetail() {
           ${DETAIL_ROBOT_ROCKET_SVG}
         </div>
 
-        <!-- ЯРКИЕ НЕОНОВЫЕ РАМОЧКИ CPU И RAM ДЛЯ ТЕЛЕФОНА -->
         <div class="gauge-metrics-values">
           <div class="metric-pill-card cpu-box">
             <span class="metric-val-bold">${cpuPct.toFixed(1)}%</span>
@@ -685,7 +698,6 @@ function screenDetail() {
   `;
 }
 
-/* --- ОБРАБОТКА СОБЫТИЙ И АНИМАЦИИ КНОПОК --- */
 function wireEvents(screen) {
   document.getElementById("btn-back")?.addEventListener("click", goBack);
   document.getElementById("btn-settings")?.addEventListener("click", () => navigateTo("settings"));
@@ -738,7 +750,9 @@ function wireEvents(screen) {
         } catch (_) {}
         await setLanguage(lang);
         haptic("light");
-        goBack();
+        // Принудительно очищаем стек до главной и перерисовываем
+        NAV.stack = ["home"];
+        render();
       });
     });
   }
@@ -771,7 +785,6 @@ async function refreshHome() {
   haptic("success");
 }
 
-/* --- ГЛАВНЫЙ RENDER --- */
 function render() {
   injectRedesignStyle();
   installTouchGlow();
@@ -792,13 +805,14 @@ function render() {
   wireEvents(screen);
 }
 
+// Перехватываем глобальный метод render, чтобы старые скрипты не возвращали старый макет
+window.render = render;
+
 /* --- ТИХОЕ АВТООБНОВЛЕНИЕ КАЖДЫЕ 3 СЕКУНДЫ --- */
 let autoRefreshBusy = false;
 setInterval(async () => {
   if (autoRefreshBusy || STATE.loading || STATE.authorized === false) return;
   const screen = typeof currentScreen === "function" ? currentScreen() : null;
-  
-  // Обновляем только на главном экране или в деталях бота
   if (screen !== "home" && screen !== "detail") return;
 
   autoRefreshBusy = true;
@@ -814,7 +828,7 @@ setInterval(async () => {
       render();
     }
   } catch (e) {
-    console.warn("DHost silent 3s refresh error:", e);
+    console.warn("Silent refresh:", e);
   } finally {
     autoRefreshBusy = false;
   }
