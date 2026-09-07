@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=10">
-<link rel="stylesheet" href="no-flicker.css?v=10">
+<link rel="stylesheet" href="style.css?v=20">
+<link rel="stylesheet" href="no-flicker.css?v=20">
 </head>
 <body>
 <div id="app" class="app">
@@ -21,27 +21,21 @@
   </div>
 </div>
 
-<!-- ===== КОНТЕЙНЕРЫ ДЛЯ ЧАТОВ ===== -->
-<!-- Список чатов -->
 <div id="dialogContainer" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#0a0a0f; z-index:1000; overflow-y:auto;">
     <div id="dialogContent"></div>
 </div>
 
-<!-- Окно переписки -->
 <div id="chatContainer" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#0a0a0f; z-index:1001; overflow-y:auto; flex-direction:column;">
     <div id="chatContent"></div>
 </div>
 
-<!-- Основной сетевой слой и базовая логика приложения -->
-<script src="api.js?v=10"></script>
-<script src="app.js?v=10"></script>
-<script src="refresh-controller.js?v=10"></script>
+<script src="api.js?v=20"></script>
+<script src="app.js?v=20"></script>
+<script src="refresh-controller.js?v=20"></script>
 
-<!-- Новый дизайн с круговыми индикаторами, рамочками CPU/RAM и мобильным неоновым кликом -->
-<script src="redesign.js?v=999"></script>
+<!-- Главный скрипт дизайна, перевода и автообновления -->
+<script src="redesign.js?v=2001"></script>
 
-<!-- Скрипты стабильности и управления макетом -->
-<script src="render-stability.js?v=10"></script>
-<script src="menu-cleanup.js?v=10"></script>
+<script src="menu-cleanup.js?v=20"></script>
 </body>
 </html>
