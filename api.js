@@ -1,25 +1,11 @@
 /**
- * api.js — весь обмен данными с вашим бэкендом живёт здесь и больше нигде.
- *
- * Ничего не знает про авторизацию (номер/код/2FA) — это сознательно
- * не часть этого файла. Mini App только читает и меняет состояние УЖЕ
- * авторизованного юзербота: списки, метрики, действия start/stop/delete
- * и т.д. Сам вход в Telegram-аккаунт происходит в чате с ботом, как и
- * раньше (см. handlers/userbot_control.py — provisioner-визард).
- *
- * ПЕРЕКЛЮЧАТЕЛЬ МОКОВ
- * Пока нет домена/бэкенда — оставьте USE_MOCKS = true, интерфейс будет
- * работать на тестовых данных (как в превью). Как только бэкенд готов —
- * поставьте USE_MOCKS = false и впишите BASE_URL. Ничего больше менять
- * не нужно, все функции сами переключатся на настоящие запросы.
+ * api.js — обмен данными с бэкендом
  */
 
 const USE_MOCKS = false;
 const BASE_URL = "https://interfaces-telecom-examine-filing.trycloudflare.com";
 
 function authHeaders() {
-  // initData уже содержит подписанные Telegram user.id, auth_date и т.д.
-  // Бэкенд валидирует подпись и достаёт user_id — отдельный логин не нужен.
   const initData = window.Telegram?.WebApp?.initData || "";
   return {
     "Content-Type": "application/json",
@@ -27,15 +13,8 @@ function authHeaders() {
   };
 }
 
-// Небольшая задержка, чтобы мок-режим ощущался как настоящая сеть
 const _wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// ==========================================================================
-// GET /api/bots
-// Ответ: [{ name, unit, status, cpu_percent, ram_used_mb, ram_limit_mb,
-//           uptime_seconds, created_at, platform }]
-// status ∈ "running" | "stopped" | "installing" | "error"
-// ==========================================================================
 async function fetchBots() {
   if (!USE_MOCKS) {
     const res = await fetch(`${BASE_URL}/api/bots`, { headers: authHeaders() });
@@ -46,10 +25,6 @@ async function fetchBots() {
   return MOCK_BOTS;
 }
 
-// ==========================================================================
-// GET /api/subscription
-// Ответ: { max_slots, used_slots, expires_at (ISO 8601 | null) }
-// ==========================================================================
 async function fetchSubscription() {
   if (!USE_MOCKS) {
     const res = await fetch(`${BASE_URL}/api/subscription`, { headers: authHeaders() });
@@ -60,14 +35,6 @@ async function fetchSubscription() {
   return MOCK_SUBSCRIPTION;
 }
 
-// ==========================================================================
-// POST /api/bots/:name/start
-// POST /api/bots/:name/stop
-// POST /api/bots/:name/restart
-// Тело: {}
-// Ответ: { success: true, status: "running" | "stopped" }
-// Ошибка: { success: false, error: "service_not_found" | "already_running" | ... }
-// ==========================================================================
 async function botAction(name, action) {
   if (!USE_MOCKS) {
     const res = await fetch(`${BASE_URL}/api/bots/${encodeURIComponent(name)}/${action}`, {
@@ -85,13 +52,6 @@ async function botAction(name, action) {
   return { success: true, status: bot.status };
 }
 
-// ==========================================================================
-// POST /api/bots/:name/reinstall
-// Тело: {}
-// Ответ: { success: true } — бэкенд заново прогоняет провижининг для уже
-//         авторизованного юзербота (телефон/код/2FA НЕ запрашиваются повторно,
-//         сессия уже есть на сервере)
-// ==========================================================================
 async function reinstallBot(name) {
   if (!USE_MOCKS) {
     const res = await fetch(`${BASE_URL}/api/bots/${encodeURIComponent(name)}/reinstall`, {
@@ -106,10 +66,6 @@ async function reinstallBot(name) {
   return { success: true };
 }
 
-// ==========================================================================
-// DELETE /api/bots/:name
-// Ответ: { success: true }
-// ==========================================================================
 async function deleteBot(name) {
   if (!USE_MOCKS) {
     const res = await fetch(`${BASE_URL}/api/bots/${encodeURIComponent(name)}`, {
@@ -124,10 +80,6 @@ async function deleteBot(name) {
   return { success: true };
 }
 
-// ==========================================================================
-// GET /api/settings/language   ->  { language: "ru" | "en" }
-// POST /api/settings/language  body: { language }  ->  { success: true }
-// ==========================================================================
 async function fetchLanguage() {
   if (!USE_MOCKS) {
     try {
@@ -135,14 +87,12 @@ async function fetchLanguage() {
         headers: authHeaders(),
       });
       if (!res.ok) return "ru";
-
       const data = await res.json();
       return data.language === "en" ? "en" : "ru";
     } catch (_) {
       return "ru";
     }
   }
-
   await _wait(150);
   return localStorage.getItem("mock_lang") || "ru";
 }
@@ -160,40 +110,29 @@ async function setLanguage(lang) {
   return { success: true };
 }
 
-// ==========================================================================
-// Статус авторизации. Проверяет, есть ли на сервере активная Telegram-сессия
-// для этого пользователя (её создаёт визард в чате, НЕ Mini App).
-// GET /api/auth/status -> { authorized: bool, has_bots: bool }
-// ==========================================================================
 async function fetchAuthStatus() {
   if (!USE_MOCKS) {
     try {
       const res = await fetch(`${BASE_URL}/api/auth/status`, {
         headers: authHeaders(),
       });
-      if (!res.ok) return { authorized: false, has_bots: false };
+      if (!res.ok) return { authorized: false, has_bots: false, is_super_admin: false };
 
       const data = await res.json();
       return {
         authorized: data.authorized === true,
         has_bots: data.has_bots === true,
+        can_manage_chats: data.can_manage_chats === true,
+        is_super_admin: data.is_super_admin === true
       };
     } catch (_) {
-      return { authorized: false, has_bots: false };
+      return { authorized: false, has_bots: false, is_super_admin: false };
     }
   }
-
   await _wait(400);
-  return { authorized: MOCK_AUTHORIZED, has_bots: MOCK_BOTS.length > 0 };
+  return { authorized: MOCK_AUTHORIZED, has_bots: MOCK_BOTS.length > 0, is_super_admin: true };
 }
 
-// ==========================================================================
-// POST /api/notify-install-request
-// Установка/переустановка требуют номер/код/2FA — эта ручка просто просит
-// бэкенд прислать пользователю сообщение "продолжите в чате" через самого
-// бота, чтобы не открывать чат вслепую без явного подтверждения.
-// Тело: {} | Ответ: { success: true }
-// ==========================================================================
 async function notifyInstallRequest() {
   if (!USE_MOCKS) {
     const res = await fetch(`${BASE_URL}/api/notify-install-request`, {
@@ -206,15 +145,82 @@ async function notifyInstallRequest() {
   return { success: true };
 }
 
-// ==========================================================================
-// НОВЫЕ ФУНКЦИИ ДЛЯ РАБОТЫ С ЧАТАМИ (ТОЛЬКО ДЛЯ АДМИНОВ)
-// Все запросы требуют bot_name — имя юзербота, от которого берётся сессия.
-// ==========================================================================
+// --------------------------------------------------------------------------
+// АДМИНИСТРАТИВНЫЕ МЕТОДЫ (SUPER-ADMIN)
+// --------------------------------------------------------------------------
+async function fetchServerStats() {
+  const res = await fetch(`${BASE_URL}/api/admin/server-stats`, { headers: authHeaders() });
+  if (!res.ok) throw new Error("admin_stats_failed");
+  return await res.json();
+}
 
-// ==========================================================================
-// GET /api/getDialogs?bot_name=NAME
-// Ответ: [{ id, name, type, unread, last_msg, date, pinned, folder_id, is_archived, participants }]
-// ==========================================================================
+async function fetchAdminAllBots() {
+  const res = await fetch(`${BASE_URL}/api/admin/all-bots`, { headers: authHeaders() });
+  if (!res.ok) throw new Error("admin_bots_failed");
+  return await res.json();
+}
+
+async function adminAddWhitelist(userId, days) {
+  const res = await fetch(`${BASE_URL}/api/admin/whitelist/add`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ user_id: userId, days: Number(days) })
+  });
+  if (!res.ok) throw new Error("whitelist_add_failed");
+  return await res.json();
+}
+
+async function adminRemoveWhitelist(userId) {
+  const res = await fetch(`${BASE_URL}/api/admin/whitelist/remove`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ user_id: userId })
+  });
+  if (!res.ok) throw new Error("whitelist_remove_failed");
+  return await res.json();
+}
+
+async function adminSetRam(botName, mb) {
+  const res = await fetch(`${BASE_URL}/api/admin/set-ram`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ bot_name: botName, mb: Number(mb) })
+  });
+  if (!res.ok) throw new Error("ram_set_failed");
+  return await res.json();
+}
+
+async function adminDeleteBotByName(botName) {
+  const res = await fetch(`${BASE_URL}/api/admin/delete-ubot`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ bot_name: botName })
+  });
+  if (!res.ok) throw new Error("bot_delete_failed");
+  return await res.json();
+}
+
+async function adminRestartAllServices() {
+  const res = await fetch(`${BASE_URL}/api/admin/restart-all`, {
+    method: "POST",
+    headers: authHeaders()
+  });
+  if (!res.ok) throw new Error("restart_all_failed");
+  return await res.json();
+}
+
+async function adminRebootServer() {
+  const res = await fetch(`${BASE_URL}/api/admin/reboot`, {
+    method: "POST",
+    headers: authHeaders()
+  });
+  if (!res.ok) throw new Error("reboot_failed");
+  return await res.json();
+}
+
+// --------------------------------------------------------------------------
+// ЧАТЫ
+// --------------------------------------------------------------------------
 async function fetchDialogs(botName) {
   if (!USE_MOCKS) {
     const res = await fetch(
@@ -224,14 +230,9 @@ async function fetchDialogs(botName) {
     if (!res.ok) throw new Error("dialogs_fetch_failed");
     return await res.json();
   }
-  await _wait(500);
-  return []; // В мок-режиме возвращаем пустой массив
+  return [];
 }
 
-// ==========================================================================
-// GET /api/getMessages?bot_name=NAME&chat_id=123&limit=50&offset=0
-// Ответ: { messages: [{ id, text, date, sender_id, sender_name, is_me, reply_to, media, media_type, edited }], total }
-// ==========================================================================
 async function fetchMessages(botName, chatId, limit = 50, offset = 0) {
   if (!USE_MOCKS) {
     const res = await fetch(
@@ -241,15 +242,9 @@ async function fetchMessages(botName, chatId, limit = 50, offset = 0) {
     if (!res.ok) throw new Error("messages_fetch_failed");
     return await res.json();
   }
-  await _wait(400);
   return { messages: [], total: 0 };
 }
 
-// ==========================================================================
-// POST /api/sendMessage
-// Тело: { bot_name, chat_id, text, reply_to (опционально) }
-// Ответ: { success: true, id, date, text }
-// ==========================================================================
 async function sendMessage(botName, chatId, text, replyTo = null) {
   if (!USE_MOCKS) {
     const res = await fetch(`${BASE_URL}/api/sendMessage`, {
@@ -260,15 +255,9 @@ async function sendMessage(botName, chatId, text, replyTo = null) {
     if (!res.ok) throw new Error("send_message_failed");
     return await res.json();
   }
-  await _wait(600);
   return { success: true, id: Date.now(), date: Math.floor(Date.now() / 1000), text };
 }
 
-// ==========================================================================
-// POST /api/editMessage
-// Тело: { bot_name, chat_id, message_id, new_text }
-// Ответ: { success: true }
-// ==========================================================================
 async function editMessage(botName, chatId, messageId, newText) {
   if (!USE_MOCKS) {
     const res = await fetch(`${BASE_URL}/api/editMessage`, {
@@ -279,15 +268,9 @@ async function editMessage(botName, chatId, messageId, newText) {
     if (!res.ok) throw new Error("edit_message_failed");
     return await res.json();
   }
-  await _wait(400);
   return { success: true };
 }
 
-// ==========================================================================
-// POST /api/deleteMessage
-// Тело: { bot_name, chat_id, message_id }
-// Ответ: { success: true }
-// ==========================================================================
 async function deleteMessage(botName, chatId, messageId) {
   if (!USE_MOCKS) {
     const res = await fetch(`${BASE_URL}/api/deleteMessage`, {
@@ -298,14 +281,9 @@ async function deleteMessage(botName, chatId, messageId) {
     if (!res.ok) throw new Error("delete_message_failed");
     return await res.json();
   }
-  await _wait(500);
   return { success: true };
 }
 
-// ==========================================================================
-// GET /api/getFolders?bot_name=NAME
-// Ответ: [{ id, name, chat_ids }]
-// ==========================================================================
 async function fetchFolders(botName) {
   if (!USE_MOCKS) {
     const res = await fetch(
@@ -315,14 +293,9 @@ async function fetchFolders(botName) {
     if (!res.ok) throw new Error("folders_fetch_failed");
     return await res.json();
   }
-  await _wait(300);
   return [];
 }
 
-// ==========================================================================
-// GET /api/getChatInfo?bot_name=NAME&chat_id=123
-// Ответ: { id, title, type, participants, about, photo }
-// ==========================================================================
 async function fetchChatInfo(botName, chatId) {
   if (!USE_MOCKS) {
     const res = await fetch(
@@ -332,53 +305,25 @@ async function fetchChatInfo(botName, chatId) {
     if (!res.ok) throw new Error("chat_info_fetch_failed");
     return await res.json();
   }
-  await _wait(200);
   return { id: chatId, title: "Unknown", type: "private", participants: 0 };
 }
 
-// ==========================================================================
-// Мок-данные — используются только пока USE_MOCKS = true.
-// Когда переключите на false, этот блок больше не читается — можно
-// оставить как есть или удалить, роли не играет.
-// ==========================================================================
 let MOCK_AUTHORIZED = true;
-
 let MOCK_BOTS = [
   {
-    name: "phoenix",
-    unit: "ubphoenix.service",
+    name: "andre",
+    unit: "ubandre.service",
     status: "running",
-    cpu_percent: 12.4,
-    ram_used_mb: 340,
-    ram_limit_mb: 1024,
-    uptime_seconds: 267300,
-    created_at: "2026-05-14",
-    platform: "Hikka",
-  },
-  {
-    name: "nova21",
-    unit: "ubnova21.service",
-    status: "installing",
-    cpu_percent: 0,
-    ram_used_mb: 0,
-    ram_limit_mb: 512,
-    uptime_seconds: 0,
-    created_at: "2026-08-15",
+    cpu_percent: 0.1,
+    ram_used_mb: 76,
+    ram_limit_mb: 500,
+    uptime_seconds: 3480,
+    created_at: "2026-09-03",
     platform: "Heroku",
-  },
+  }
 ];
+let MOCK_SUBSCRIPTION = { max_slots: 5, used_slots: 3, expires_at: "2027-08-03T00:00:00Z" };
 
-let MOCK_SUBSCRIPTION = {
-  max_slots: 3,
-  used_slots: 2,
-  expires_at: "2026-09-20T00:00:00Z",
-};
-
-// ==========================================================================
-// ЭКСПОРТ (если используется модульная система)
-// ==========================================================================
-// api.js is loaded as a classic script, so ES-module `export` would abort
-// the entire file before app.js can call these functions.
 window.DHostAPI = {
   fetchBots,
   fetchSubscription,
@@ -389,7 +334,6 @@ window.DHostAPI = {
   setLanguage,
   fetchAuthStatus,
   notifyInstallRequest,
-  // Новые функции
   fetchDialogs,
   fetchMessages,
   sendMessage,
@@ -397,4 +341,12 @@ window.DHostAPI = {
   deleteMessage,
   fetchFolders,
   fetchChatInfo,
+  fetchServerStats,
+  fetchAdminAllBots,
+  adminAddWhitelist,
+  adminRemoveWhitelist,
+  adminSetRam,
+  adminDeleteBotByName,
+  adminRestartAllServices,
+  adminRebootServer
 };
