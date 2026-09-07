@@ -1,6 +1,14 @@
-/* DHost UI: Cyber-Glow Redesign with Radial Metrics & Custom Header */
+/* ==========================================================================
+   UserBotHost UI Cyberpunk Redesign
+   - Custom Header с маскотом-роботом
+   - Радиальные круги метрик на главной (screenHome)
+   - Двойная неоновая дуга-спидометр с роботом-ракетой внутри (screenDetail)
+   - Интерактивные анимации кнопок управления (вращение, сжатие, дрожание корзины)
+   ========================================================================== */
+
 const UI = { query: "", filter: "all" };
 
+/* --- SVG ИКОНКИ И МАСКОТЫ --- */
 const ROBOT_AVATAR_SVG = `<svg viewBox="0 0 64 64" fill="none" class="bot-header-avatar">
   <defs>
     <linearGradient id="glowB" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -25,7 +33,35 @@ const USER_AVATAR_SVG = `<svg viewBox="0 0 24 24" fill="currentColor">
   <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
 </svg>`;
 
-const REDESIGN_STYLE = `
+const DETAIL_ROBOT_ROCKET_SVG = `<svg viewBox="0 0 100 100" class="gauge-center-robot">
+  <defs>
+    <linearGradient id="botGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <filter id="glowG" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <g class="rocket-thruster left">
+    <path d="M 22 52 Q 18 64 22 74 Q 25 64 25 52 Z" fill="#38bdf8" opacity="0.85"/>
+    <path d="M 20 74 Q 22 82 25 74 Z" fill="#f59e0b"/>
+  </g>
+  <g class="rocket-thruster right">
+    <path d="M 78 52 Q 82 64 78 74 Q 75 64 75 52 Z" fill="#38bdf8" opacity="0.85"/>
+    <path d="M 75 74 Q 78 82 80 74 Z" fill="#f59e0b"/>
+  </g>
+  <rect x="30" y="32" width="40" height="34" rx="12" fill="#0f172a" stroke="url(#botGrad)" stroke-width="2.5" filter="url(#glowG)"/>
+  <line x1="50" y1="23" x2="50" y2="32" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="50" cy="21" r="3" fill="#38bdf8" filter="url(#glowG)"/>
+  <rect x="38" y="44" width="7" height="9" rx="3.5" fill="#38bdf8" filter="url(#glowG)"/>
+  <rect x="55" y="44" width="7" height="9" rx="3.5" fill="#38bdf8" filter="url(#glowG)"/>
+  <path d="M 43 58 Q 50 62 57 58" stroke="#818cf8" stroke-width="2" stroke-linecap="round" fill="none"/>
+</svg>`;
+
+/* --- ЕДИНАЯ ТАБЛИЦА СТИЛЕЙ КИБЕРПАНК-ДИЗАЙНА --- */
+const FULL_REDESIGN_STYLE = `
 :root {
   --neon-blue: #3b82f6;
   --neon-cyan: #38bdf8;
@@ -33,7 +69,7 @@ const REDESIGN_STYLE = `
   --neon-green: #10b981;
 }
 
-/* Custom Header */
+/* Header */
 .topbar-home {
   padding: calc(var(--safe-top) + 12px) 16px 14px;
   background: transparent !important;
@@ -47,7 +83,6 @@ const REDESIGN_STYLE = `
 .header-title-row span { color: #60a5fa; }
 .header-subtitle { font-size: 11px; color: var(--text-faint); margin-top: 3px; font-weight: 500; }
 
-/* Home Controls in Topbar */
 .home-top-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
 .home-top-action {
   width: 38px; height: 38px; border-radius: 12px;
@@ -92,7 +127,7 @@ const REDESIGN_STYLE = `
 .stat-dot.warn { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
 .stat-dot.err { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
 
-/* Bot Cyber Cards */
+/* Bot Cards (Главная) */
 .bot-card {
   position: relative; background: #0c1117;
   border-radius: 20px; padding: 15px; margin-bottom: 12px;
@@ -125,7 +160,6 @@ const REDESIGN_STYLE = `
   background: rgba(16, 185, 129, 0.12); color: #10b981;
 }
 
-/* Metric Circles (Radial Progress) */
 .bot-metrics-row {
   display: flex; align-items: center; justify-content: space-between;
   margin-top: 14px; padding-top: 12px;
@@ -154,19 +188,114 @@ const REDESIGN_STYLE = `
   font-size: 11px; color: var(--text-faint); font-weight: 500;
 }
 .bot-card-meta-foot svg { width: 14px; height: 14px; }
+
+/* Экран деталей (screenDetail) */
+.detail-cyber-card {
+  background: linear-gradient(165deg, #121820 0%, #0a0e14 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px; padding: 18px;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative; overflow: hidden;
+}
+.detail-cyber-card::before {
+  content: ''; position: absolute; top: -40px; left: 50%;
+  transform: translateX(-50%); width: 140px; height: 140px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+.detail-head-flex { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.detail-name-lg { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: #fff; }
+.detail-unit-sub { font-size: 11px; font-family: var(--font-mono); color: var(--text-faint); margin-top: 3px; }
+
+.gauge-wrapper {
+  position: relative; width: 220px; height: 125px;
+  margin: 10px auto 0; display: flex; justify-content: center;
+}
+.gauge-svg { width: 220px; height: 125px; overflow: visible; }
+.gauge-track { fill: none; stroke: rgba(255, 255, 255, 0.06); stroke-linecap: round; }
+.gauge-arc-cpu {
+  fill: none; stroke: #10b981; stroke-linecap: round;
+  filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.6));
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.gauge-arc-ram {
+  fill: none; stroke: #06b6d4; stroke-linecap: round;
+  filter: drop-shadow(0 0 6px rgba(6, 182, 212, 0.6));
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.gauge-center-robot {
+  position: absolute; width: 68px; height: 68px; bottom: 0px; left: 50%;
+  transform: translateX(-50%); animation: robotFloat 3s ease-in-out infinite;
+}
+@keyframes robotFloat {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-5px); }
+}
+
+.gauge-metrics-values {
+  display: flex; justify-content: space-between; margin-top: 14px; padding: 0 10px;
+}
+.metric-col { display: flex; flex-direction: column; }
+.metric-col.right { align-items: flex-end; }
+.metric-val-bold { font-size: 19px; font-weight: 800; font-family: var(--font-mono); color: #fff; }
+.metric-label-sub { font-size: 11px; color: var(--text-faint); font-weight: 600; margin-top: 2px; }
+
+.detail-meta-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.detail-meta-cell { display: flex; flex-direction: column; }
+.meta-lbl { font-size: 11px; color: var(--text-faint); margin-bottom: 4px; }
+.meta-val { font-size: 14px; font-weight: 700; font-family: var(--font-mono); color: #e2e8f0; }
+
+/* Кнопки управления */
+.action-grid-v2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.act-btn-v2 {
+  background: linear-gradient(145deg, #131922, #0d1218);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px; padding: 16px 12px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  cursor: pointer; color: #fff; font-size: 13px; font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  position: relative; overflow: hidden;
+}
+.act-btn-v2:active { transform: scale(0.96); border-color: rgba(255, 255, 255, 0.2); }
+.act-btn-v2 svg {
+  width: 22px; height: 22px; color: #94a3b8;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s;
+}
+
+/* Анимации при клике */
+.act-btn-v2.spin-active svg { animation: actRotate 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+@keyframes actRotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.act-btn-v2.pulse-active svg { animation: actPulse 0.4s ease-in-out; }
+@keyframes actPulse { 0% { transform: scale(1); } 50% { transform: scale(0.75); } 100% { transform: scale(1); } }
+
+.act-btn-v2.danger { color: #f87171; border-color: rgba(239, 68, 68, 0.2); }
+.act-btn-v2.danger svg { color: #ef4444; }
+.act-btn-v2.danger.trash-active svg { animation: actTrashShake 0.45s ease-in-out; }
+@keyframes actTrashShake {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(-14deg) translateY(-2px); }
+  50% { transform: rotate(14deg); }
+  75% { transform: rotate(-6deg); }
+  100% { transform: rotate(0deg); }
+}
 `;
 
 function injectRedesignStyle() {
-  let s = document.getElementById("dhost-cyber-style");
+  let s = document.getElementById("dhost-redesign-cyber-style");
   if (!s) {
     s = document.createElement("style");
-    s.id = "dhost-cyber-style";
+    s.id = "dhost-redesign-cyber-style";
     document.head.appendChild(s);
   }
-  s.textContent = REDESIGN_STYLE;
+  s.textContent = FULL_REDESIGN_STYLE;
 }
 
-// Рендер кругового SVG прогресс-бара
 function renderRadial(percent, label, centerText, valueText, warnAt = 70, errAt = 90) {
   const radius = 17;
   const circ = 2 * Math.PI * radius;
@@ -192,6 +321,13 @@ function renderRadial(percent, label, centerText, valueText, warnAt = 70, errAt 
   `;
 }
 
+function getArcOffset(percent, radius) {
+  const arcLength = Math.PI * radius;
+  const pct = Math.max(0, Math.min(percent, 100));
+  return arcLength * (1 - pct / 100);
+}
+
+/* --- РЕНДЕР HEADER --- */
 function renderHeader(screen) {
   if (screen === "home") {
     return `
@@ -226,6 +362,7 @@ function renderHeader(screen) {
   `;
 }
 
+/* --- РЕНДЕР ГЛАВНОГО ЭКРАНА --- */
 function screenHome() {
   if (STATE.loading) return `<div class="screen home-screen"><div class="skel skel-card"></div><div class="skel skel-card"></div></div>`;
   if (!STATE.bots.length) {
@@ -316,6 +453,184 @@ function screenHome() {
   `;
 }
 
+/* --- РЕНДЕР ЭКРАНА ДЕТАЛЕЙ (DETAIL) --- */
+function screenDetail() {
+  const bot = STATE.bots.find((b) => b.name === NAV.params.name);
+  if (!bot) return `<div class="screen"><div class="gate-text">Not found</div></div>`;
+
+  const cpuPct = Math.min(Math.max(Number(bot.cpu_percent) || 0, 0), 100);
+  const ramLimit = Number(bot.ram_limit_mb) || 0;
+  const ramUsed = Number(bot.ram_used_mb) || 0;
+  const ramPct = ramLimit ? Math.min((ramUsed / ramLimit) * 100, 100) : 0;
+  const isRunning = bot.status === "running";
+
+  const rCPU = 80;
+  const rRAM = 62;
+  const lenCPU = Math.PI * rCPU;
+  const lenRAM = Math.PI * rRAM;
+  const offCPU = getArcOffset(cpuPct, rCPU);
+  const offRAM = getArcOffset(ramPct, rRAM);
+
+  return `
+    <div class="screen">
+      <div class="detail-cyber-card">
+        <div class="detail-head-flex">
+          <div>
+            <div class="detail-name-lg">${bot.name}</div>
+            <div class="detail-unit-sub">${bot.unit || bot.platform || ""}</div>
+          </div>
+          <div class="bot-status-tag">
+            <span class="stat-dot ok"></span> ${isRunning ? "running" : bot.status}
+          </div>
+        </div>
+
+        <div class="gauge-wrapper">
+          <svg class="gauge-svg" viewBox="0 0 220 120">
+            <path class="gauge-track" stroke-width="11" d="M 30 110 A 80 80 0 0 1 190 110" />
+            <path class="gauge-track" stroke-width="9" d="M 48 110 A 62 62 0 0 1 172 110" />
+
+            <path class="gauge-arc-cpu" stroke-width="11" 
+              stroke-dasharray="${lenCPU}" stroke-dashoffset="${offCPU}" 
+              d="M 30 110 A 80 80 0 0 1 190 110" />
+
+            <path class="gauge-arc-ram" stroke-width="9" 
+              stroke-dasharray="${lenRAM}" stroke-dashoffset="${offRAM}" 
+              d="M 48 110 A 62 62 0 0 1 172 110" />
+          </svg>
+
+          ${DETAIL_ROBOT_ROCKET_SVG}
+        </div>
+
+        <div class="gauge-metrics-values">
+          <div class="metric-col">
+            <span class="metric-val-bold">${cpuPct.toFixed(1)}%</span>
+            <span class="metric-label-sub">CPU</span>
+          </div>
+          <div class="metric-col right">
+            <span class="metric-val-bold">${Math.round(ramPct)}%</span>
+            <span class="metric-label-sub">RAM · ${Math.round(ramUsed)}/${Math.round(ramLimit)}MB</span>
+          </div>
+        </div>
+
+        <div class="detail-meta-row">
+          <div class="detail-meta-cell">
+            <span class="meta-lbl">создан</span>
+            <span class="meta-val">${fmtDate(bot.created_at)}</span>
+          </div>
+          <div class="detail-meta-cell">
+            <span class="meta-lbl">аптайм</span>
+            <span class="meta-val">${fmtUptime(bot.uptime_seconds)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:16px;">Управление</div>
+      
+      <div class="action-grid-v2">
+        <div class="act-btn-v2" data-action="${isRunning ? "stop" : "start"}" data-anim="pulse">
+          ${isRunning ? ICON.stop : ICON.play}
+          <span>${isRunning ? "Остановить" : "Запустить"}</span>
+        </div>
+        <div class="act-btn-v2" data-action="restart" data-anim="spin">
+          ${ICON.restart}
+          <span>Перезапуск</span>
+        </div>
+        <div class="act-btn-v2" data-action="reinstall" data-anim="spin">
+          ${ICON.reinstall}
+          <span>Переустановить</span>
+        </div>
+        <div class="act-btn-v2 danger" data-action="delete" data-anim="trash">
+          ${ICON.trash}
+          <span>Удалить</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* --- ОБРАБОТКА СОБЫТИЙ И АНИМАЦИИ КНОПОК --- */
+function wireEvents(screen) {
+  document.getElementById("btn-back")?.addEventListener("click", goBack);
+  document.getElementById("btn-settings")?.addEventListener("click", () => navigateTo("settings"));
+  document.getElementById("btn-open-bot")?.addEventListener("click", openInstallFlow);
+  document.getElementById("btn-open-top")?.addEventListener("click", openInstallFlow);
+  document.getElementById("btn-refresh-top")?.addEventListener("click", refreshHome);
+
+  if (screen === "home") {
+    document.querySelectorAll(".bot-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        const bot = STATE.bots.find((b) => b.name === card.dataset.bot);
+        if (bot) navigateTo("detail", { name: bot.name, unit: bot.unit });
+      });
+    });
+  }
+
+  if (screen === "detail") {
+    document.querySelectorAll(".act-btn-v2").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const anim = btn.dataset.anim;
+        if (anim === "spin") btn.classList.add("spin-active");
+        if (anim === "pulse") btn.classList.add("pulse-active");
+        if (anim === "trash") btn.classList.add("trash-active");
+
+        setTimeout(() => {
+          btn.classList.remove("spin-active", "pulse-active", "trash-active");
+        }, 600);
+
+        if (typeof handleBotAction === "function") {
+          handleBotAction(btn.dataset.action, NAV.params.name);
+        }
+      });
+    });
+  }
+
+  if (screen === "settings") {
+    document.getElementById("row-language")?.addEventListener("click", () => navigateTo("language"));
+    document.getElementById("row-support")?.addEventListener("click", () => openTelegramLink("https://t.me/userbothostchat"));
+  }
+
+  if (screen === "language") {
+    document.querySelectorAll("[data-lang]").forEach((el) => {
+      el.addEventListener("click", async () => {
+        const lang = el.dataset.lang;
+        if (lang === LANG) return;
+        LANG = lang;
+        await setLanguage(lang);
+        haptic("light");
+        goBack();
+      });
+    });
+  }
+}
+
+async function openInstallFlow() {
+  haptic("medium");
+  const sub = STATE.subscription || (await fetchSubscription());
+  STATE.subscription = sub;
+  if (sub && sub.used_slots >= sub.max_slots) {
+    openInfoSheet({
+      icon: ICON.alertCircle,
+      title: t("limitReachedTitle"),
+      text: t("limitReachedText"),
+      actionLabel: t("limitOk"),
+      danger: true
+    });
+    return;
+  }
+  openTelegramLink("https://t.me/UserBotHost_Bot?start=install");
+}
+
+async function refreshHome() {
+  const btn = document.getElementById("btn-refresh-top");
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.add("spinning");
+  }
+  await loadAll();
+  haptic("success");
+}
+
+/* --- ГЛАВНЫЙ RENDER --- */
 function render() {
   injectRedesignStyle();
   const app = document.getElementById("app");
