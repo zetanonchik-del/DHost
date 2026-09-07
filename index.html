@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>DHost</title>
+<title>UserBotHost</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,7 +13,12 @@
 </head>
 <body>
 <div id="app" class="app">
-  <div class="boot-screen" id="boot-screen"><div class="boot-prompt"><span class="boot-line">$ systemctl status userbot-control</span><span class="boot-line boot-cursor">_</span></div></div>
+  <div class="boot-screen" id="boot-screen">
+    <div class="boot-prompt">
+      <span class="boot-line">$ systemctl status userbot-control</span>
+      <span class="boot-line boot-cursor">_</span>
+    </div>
+  </div>
 </div>
 
 <!-- ===== КОНТЕЙНЕРЫ ДЛЯ ЧАТОВ ===== -->
@@ -27,15 +32,15 @@
     <div id="chatContent"></div>
 </div>
 
+<!-- Основной сетевой слой и базовая логика приложения -->
 <script src="api.js?v=3"></script>
 <script src="app.js?v=2"></script>
 <script src="refresh-controller.js?v=2"></script>
-<script src="redesign.js"></script>
-<script src="waves.js"></script>
-<script src="ui-v2.js"></script>
-<script src="ui-v3.js?v=2"></script>
-<script src="enhancements-v2.js?v=2"></script>
-<script src="layout-controls.js?v=2"></script>
+
+<!-- Новый дизайн с круговыми индикаторами CPU/RAM и кибер-стилем -->
+<script src="redesign.js?v=2"></script>
+
+<!-- Скрипты стабильности и управления макетом -->
 <script src="render-stability.js?v=2"></script>
 <script src="menu-cleanup.js?v=1"></script>
 </body>
