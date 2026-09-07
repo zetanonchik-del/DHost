@@ -1,10 +1,10 @@
 /* ==========================================================================
-   UserBotHost UI Cyberpunk Redesign (Bugfix: Language Select & Flag Switch)
+   UserBotHost UI Cyberpunk Redesign (Fixed Language Selection & Non-Blocking)
    ========================================================================== */
 
 const UI = { query: "", filter: "all" };
 
-// Синхронизация языка
+// Синхронизация сохраненного языка
 function syncSavedLanguage() {
   try {
     const saved = localStorage.getItem("mock_lang") || localStorage.getItem("dhost_lang");
@@ -19,7 +19,7 @@ function syncSavedLanguage() {
 }
 syncSavedLanguage();
 
-// Словарь переводов
+// Полный словарь переводов
 if (typeof STR !== "undefined") {
   STR.ru = Object.assign(STR.ru || {}, {
     appTitle: "Юзерботы",
@@ -486,9 +486,7 @@ const FULL_REDESIGN_STYLE = `
 .act-btn-v2:active { transform: scale(0.96); border-color: rgba(255, 255, 255, 0.2); }
 .act-btn-v2 svg { width: 22px; height: 22px; color: #94a3b8; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s; }
 
-/* ==========================================================================
-   ОБНОВЛЕННЫЙ ЭКРАН НАСТРОЕК
-   ========================================================================== */
+/* Экран Настроек */
 .sub-cyber-card {
   background: linear-gradient(145deg, #121820, #0c1015);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -686,14 +684,15 @@ const FULL_REDESIGN_STYLE = `
   align-items: center;
   justify-content: center;
   padding: 10px 0;
-  overflow: hidden;
+  overflow: visible !important;
 }
 
 .fiber-rays-bg {
   position: absolute;
   inset: -20px 0;
-  pointer-events: none;
-  z-index: 0;
+  pointer-events: none !important;
+  user-select: none !important;
+  z-index: 1;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -703,12 +702,14 @@ const FULL_REDESIGN_STYLE = `
   width: 100%;
   height: 100%;
   max-width: 480px;
+  pointer-events: none !important;
   filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.4));
 }
 .fiber-path {
   fill: none;
   stroke-linecap: round;
   opacity: 0.75;
+  pointer-events: none !important;
   animation: cyberFlow 4s ease-in-out infinite alternate;
 }
 @keyframes cyberFlow {
@@ -724,6 +725,7 @@ const FULL_REDESIGN_STYLE = `
   border-radius: 50%;
   background: #38bdf8;
   box-shadow: 0 0 6px #38bdf8;
+  pointer-events: none !important;
   animation: floatDust 5s ease-in-out infinite;
 }
 @keyframes floatDust {
@@ -733,10 +735,10 @@ const FULL_REDESIGN_STYLE = `
 
 .lang-glass-card {
   position: relative;
-  z-index: 10;
+  z-index: 100 !important;
   width: 100%;
   max-width: 440px;
-  background: rgba(13, 19, 28, 0.55);
+  background: rgba(13, 19, 28, 0.65);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -750,21 +752,24 @@ const FULL_REDESIGN_STYLE = `
 
 .lang-select-item {
   position: relative;
+  z-index: 101 !important;
   display: flex;
   align-items: center;
   gap: 16px;
   padding: 14px 18px;
   border-radius: 20px;
-  background: rgba(18, 24, 34, 0.5);
+  background: rgba(18, 24, 34, 0.65);
   border: 1.5px solid rgba(255, 255, 255, 0.08);
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  touch-action: manipulation;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .lang-select-item:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 .lang-select-item.active {
-  background: rgba(14, 30, 45, 0.7);
+  background: rgba(14, 30, 45, 0.8);
   border-color: #38bdf8;
   box-shadow: 0 0 25px rgba(56, 189, 248, 0.35), inset 0 0 15px rgba(56, 189, 248, 0.12);
 }
@@ -776,7 +781,7 @@ const FULL_REDESIGN_STYLE = `
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: none;
+  pointer-events: none !important;
   animation: flagFloat 4s ease-in-out infinite alternate;
 }
 @keyframes flagFloat {
@@ -786,7 +791,7 @@ const FULL_REDESIGN_STYLE = `
 .flag-3d-round, .flag-3d-square {
   width: 100%;
   height: 100%;
-  pointer-events: none;
+  pointer-events: none !important;
   filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
 }
 
@@ -795,7 +800,7 @@ const FULL_REDESIGN_STYLE = `
   min-width: 0;
   display: flex;
   flex-direction: column;
-  pointer-events: none;
+  pointer-events: none !important;
 }
 .lang-item-title {
   font-size: 16px;
@@ -824,7 +829,7 @@ const FULL_REDESIGN_STYLE = `
   align-items: center;
   justify-content: center;
   color: #38bdf8;
-  pointer-events: none;
+  pointer-events: none !important;
   filter: drop-shadow(0 0 8px #38bdf8);
 }
 .lang-check-icon svg {
@@ -1148,7 +1153,7 @@ function screenSettings() {
   const circ = 2 * Math.PI * radius;
   const offset = circ - (pct / 100) * circ;
 
-  const currentFlagBadge = window.LANG === "ru" ? BADGE_RU_SINGLE : BADGE_GB_SINGLE;
+  const currentFlagBadge = window.LANG === "en" ? BADGE_GB_SINGLE : BADGE_RU_SINGLE;
 
   return `
     <div class="screen">
@@ -1257,7 +1262,7 @@ function screenLanguage() {
         </div>
 
         <div class="lang-glass-card">
-          <div class="lang-select-item ${isRu ? "active" : ""}" data-lang="ru">
+          <div class="lang-select-item ${isRu ? "active" : ""}" id="lang-btn-ru" data-lang="ru">
             <div class="lang-flag-wrapper">
               ${FLAG_RU_SQUARE_3D}
             </div>
@@ -1268,7 +1273,7 @@ function screenLanguage() {
             ${isRu ? `<div class="lang-check-icon">${ICON.check}</div>` : ""}
           </div>
 
-          <div class="lang-select-item ${isEn ? "active" : ""}" data-lang="en">
+          <div class="lang-select-item ${isEn ? "active" : ""}" id="lang-btn-en" data-lang="en">
             <div class="lang-flag-wrapper">
               ${FLAG_GB_ROUND_3D}
             </div>
@@ -1283,6 +1288,28 @@ function screenLanguage() {
       </div>
     </div>
   `;
+}
+
+// Быстрое и безопасное переключение языка без зависания интерфейса
+function selectAppLanguage(selectedLang) {
+  if (!selectedLang) return;
+  
+  window.LANG = selectedLang;
+  try {
+    localStorage.setItem("mock_lang", selectedLang);
+    localStorage.setItem("dhost_lang", selectedLang);
+  } catch (_) {}
+
+  // Фоновая отправка на сервер (без блокировки UI)
+  if (typeof setLanguage === "function") {
+    setLanguage(selectedLang).catch(() => {});
+  }
+
+  if (typeof haptic === "function") haptic("light");
+
+  // Возврат на экран настроек и немедленная перерисовка
+  NAV.stack = ["settings"];
+  render();
 }
 
 function wireEvents(screen) {
@@ -1326,31 +1353,20 @@ function wireEvents(screen) {
   }
 
   if (screen === "language") {
-    // Надежный делегированный клик
-    const glassCard = document.querySelector(".lang-glass-card");
-    if (glassCard) {
-      glassCard.addEventListener("click", async (e) => {
-        const item = e.target.closest("[data-lang]");
-        if (!item) return;
+    const btnRu = document.getElementById("lang-btn-ru");
+    const btnEn = document.getElementById("lang-btn-en");
 
-        const selectedLang = item.dataset.lang;
-        if (!selectedLang) return;
+    btnRu?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      selectAppLanguage("ru");
+    });
 
-        window.LANG = selectedLang;
-        try {
-          localStorage.setItem("mock_lang", selectedLang);
-          localStorage.setItem("dhost_lang", selectedLang);
-        } catch (_) {}
-
-        if (typeof setLanguage === "function") {
-          await setLanguage(selectedLang);
-        }
-
-        if (typeof haptic === "function") haptic("light");
-        NAV.stack = ["settings"];
-        render();
-      });
-    }
+    btnEn?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      selectAppLanguage("en");
+    });
   }
 }
 
