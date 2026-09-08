@@ -81,20 +81,25 @@ async function deleteBot(name) {
 }
 
 async function fetchLanguage() {
+  const cached = localStorage.getItem("mock_lang") || localStorage.getItem("dhost_lang") || "ru";
   if (!USE_MOCKS) {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
       const res = await fetch(`${BASE_URL}/api/settings/language`, {
         headers: authHeaders(),
+        signal: controller.signal
       });
-      if (!res.ok) return "ru";
+      clearTimeout(timeoutId);
+      if (!res.ok) return cached;
       const data = await res.json();
       return data.language === "en" ? "en" : "ru";
     } catch (_) {
-      return "ru";
+      return cached;
     }
   }
   await _wait(150);
-  return localStorage.getItem("mock_lang") || "ru";
+  return cached;
 }
 
 async function setLanguage(lang) {
@@ -206,15 +211,6 @@ async function adminRestartAllServices() {
     headers: authHeaders()
   });
   if (!res.ok) throw new Error("restart_all_failed");
-  return await res.json();
-}
-
-async function adminRebootServer() {
-  const res = await fetch(`${BASE_URL}/api/admin/reboot`, {
-    method: "POST",
-    headers: authHeaders()
-  });
-  if (!res.ok) throw new Error("reboot_failed");
   return await res.json();
 }
 
@@ -347,6 +343,5 @@ window.DHostAPI = {
   adminRemoveWhitelist,
   adminSetRam,
   adminDeleteBotByName,
-  adminRestartAllServices,
-  adminRebootServer
+  adminRestartAllServices
 };
