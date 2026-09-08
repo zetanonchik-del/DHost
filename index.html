@@ -38,5 +38,18 @@
 <script src="redesign.js?v=2401"></script>
 
 <script src="menu-cleanup.js?v=24"></script>
+
+<!-- Страховочный таймер: гарантирует снятие заставки при любых задержках сети -->
+<script>
+  setTimeout(function() {
+    var boot = document.getElementById("boot-screen");
+    if (boot) {
+      boot.remove();
+      if (typeof window.render === "function") {
+        window.render();
+      }
+    }
+  }, 1200);
+</script>
 </body>
 </html>
