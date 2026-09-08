@@ -55,12 +55,12 @@ const ICON = {
   send: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>`,
 };
 
-// Право на чаты выдаёт бэкенд из ADMIN_IDS в .env
+// Право на чаты выдаёт бэкенд из ADMIN_IDS в .env[cite: 3]
 function isAdmin() {
   return Boolean(STATE?.canManageChats);
 }
 
-// Проверка на супер-админа (5011043349 и 6112843760)
+// Проверка на супер-админа (5011043349 и 6112843760)[cite: 29]
 function isSuperAdmin() {
   const currentId = getCurrentUserId();
   const allowed = [5011043349, 6112843760];
@@ -69,7 +69,7 @@ function isSuperAdmin() {
 }
 
 // ---------------------------------------------------------------------------
-// i18n — минимальный словарь под нужды Mini App
+// i18n — минимальный словарь под нужды Mini App[cite: 3]
 // ---------------------------------------------------------------------------
 const STR = {
   ru: {
@@ -225,7 +225,7 @@ function goBack() {
   render();
 }
 
-// Telegram back button
+// Telegram's own back button[cite: 3]
 function syncTelegramBackButton() {
   if (!tg?.BackButton) return;
   if (NAV.stack.length > 1) {
@@ -293,7 +293,7 @@ function openSheet({ icon, iconClass, title, text, confirmLabel, danger, onConfi
 }
 
 // ---------------------------------------------------------------------------
-// Info sheet
+// Info sheet[cite: 3]
 // ---------------------------------------------------------------------------
 function openInfoSheet({ icon, title, text, actionLabel, danger, onAction }) {
   const overlay = document.createElement("div");
@@ -386,7 +386,6 @@ async function loadAll() {
     STATE.authorized = auth.authorized;
     STATE.canManageChats = Boolean(auth.can_manage_chats);
     STATE.isSuperAdmin = Boolean(auth.is_super_admin);
-
     if (auth.authorized) {
       const [bots, sub] = await Promise.all([fetchBots(), fetchSubscription()]);
       STATE.bots = bots;
@@ -617,7 +616,7 @@ function screenLanguage() {
 }
 
 // ---------------------------------------------------------------------------
-// SCREEN: CHATS
+// SCREEN: CHATS[cite: 3]
 // ---------------------------------------------------------------------------
 function screenChats() {
   const botName = NAV.params.botName;
@@ -641,7 +640,7 @@ function screenChats() {
 }
 
 // ---------------------------------------------------------------------------
-// SCREEN: CHAT
+// SCREEN: CHAT[cite: 3]
 // ---------------------------------------------------------------------------
 function screenChat() {
   const botName = NAV.params.botName;
@@ -1046,11 +1045,38 @@ async function handleBotAction(action, name) {
 }
 
 // ---------------------------------------------------------------------------
-// Boot
+// Boot (мгновенный вход без зависания на $ systemctl status)
 // ---------------------------------------------------------------------------
 (async function boot() {
-  initTelegram();
-  LANG = await fetchLanguage();
-  document.getElementById("boot-screen")?.remove();
-  await loadAll();
+  try {
+    initTelegram();
+
+    // 1. Мгновенно берём сохранённый язык из локальной памяти
+    try {
+      const cachedLang = localStorage.getItem("mock_lang") || localStorage.getItem("dhost_lang");
+      if (cachedLang === "ru" || cachedLang === "en") {
+        LANG = cachedLang;
+        window.LANG = cachedLang;
+      }
+    } catch (_) {}
+
+    // 2. СРАЗУ удаляем заставку boot-screen, не блокируя UI ожиданием сервера
+    const bootEl = document.getElementById("boot-screen");
+    if (bootEl) bootEl.remove();
+
+    // 3. Рисуем начальный скелетон
+    if (typeof render === "function") render();
+
+    // 4. Запрашиваем язык с сервера с таймаутом (не ждём дольше 2 секунд)
+    const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(LANG), 2000));
+    LANG = await Promise.race([fetchLanguage().catch(() => LANG), timeoutPromise]);
+    window.LANG = LANG;
+
+    // 5. Загружаем остальные данные
+    await loadAll();
+  } catch (err) {
+    console.error("Boot error:", err);
+    document.getElementById("boot-screen")?.remove();
+    if (typeof render === "function") render();
+  }
 })();
