@@ -10,6 +10,7 @@ function authHeaders() {
   return {
     "Content-Type": "application/json",
     "X-Telegram-Init-Data": initData,
+    "ngrok-skip-browser-warning": "true",
   };
 }
 
