@@ -1,9 +1,9 @@
-/**
+﻿/**
  * api.js — обмен данными с бэкендом
  */
 
 const USE_MOCKS = false;
-const BASE_URL = "https://interfaces-telecom-examine-filing.trycloudflare.com";
+const BASE_URL = "https://vastness-ladylike-gerbil.ngrok-free.dev";
 
 function authHeaders() {
   const initData = window.Telegram?.WebApp?.initData || "";
